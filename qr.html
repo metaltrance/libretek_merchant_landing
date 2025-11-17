@@ -5,16 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de Código QR</title>
     <style>
+        html {
+            height: 100%;
+            height: -webkit-fill-available;
+        }
         body {
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
             margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
             background-color: #f0f0f0;
             position: relative;
+            overflow: auto;
         }
         body::before {
             content: '';
@@ -23,12 +31,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* Use your local PNG file - save it as 'bitcoin-btc-logo.png' in the same folder as this HTML */
-            background-image: url('/bitcoin-btc-logo.png');
-            background-size: cover; /* Reverted to cover for full subtle background like before */
+            /* Use a web-hosted Bitcoin logo for cross-platform consistency */
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/512px-Bitcoin.svg.png');
+            background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            opacity: 0.1; /* Back to original subtle opacity */
+            opacity: 0.1;
             z-index: -1;
         }
         #topText {
@@ -37,11 +45,13 @@
             margin-bottom: 10px;
             text-align: center;
             color: #333;
+            flex-shrink: 0;
         }
         .buttons {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            flex-shrink: 0;
         }
         .button {
             display: inline-block;
@@ -69,6 +79,7 @@
             border: none;
             cursor: pointer;
             font-size: 16px;
+            flex-shrink: 0;
         }
         #registerButton:hover {
             background-color: #0056b3;
@@ -78,6 +89,7 @@
             padding: 10px;
             background: white;
             cursor: pointer; /* Indicate tappable */
+            flex-shrink: 0;
         }
         #urlField {
             margin-top: 10px;
@@ -85,10 +97,17 @@
             font-size: 16px;
             width: 300px;
             display: none;
+            flex-shrink: 0;
         }
         #error {
             color: red;
             margin-top: 10px;
+            flex-shrink: 0;
+        }
+        h1 {
+            text-align: center;
+            margin: 10px 0;
+            flex-shrink: 0;
         }
     </style>
 </head>
