@@ -26,6 +26,11 @@
             box-shadow: 0 4px 8px rgba(247, 147, 26, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
             margin: 5px auto;
         }
+        #submitBtn {
+            padding: 15px 30px;
+            font-size: 18px;
+            min-width: 250px;
+        }
         button:hover, .photo-input-label:hover {
             background-color: #e6830a;
             box-shadow: 0 2px 4px rgba(247, 147, 26, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
@@ -58,7 +63,15 @@
             height: auto;
             min-width: auto;
         }
-        #preview { max-width: 100%; max-height: 120px; margin: 5px 0; display: none; object-fit: cover; border-radius: 8px; }
+        #preview { 
+            max-width: 100%; 
+            max-height: 120px; 
+            margin: 5px auto; 
+            display: none; 
+            object-fit: cover; 
+            border-radius: 8px;
+            display: block;
+        }
         
         /* Photo Input Styling */
         .photo-input-container {
@@ -323,17 +336,17 @@
         <label for="lightning">Dirección Lightning (de Blink para tips):</label>
         <input type="text" id="lightning" required>
         
-        <div class="photo-input-container">
-            <label for="photo" id="photoLabel" class="photo-input-label">Tomar foto del puesto</label>
-            <input type="file" id="photo" accept="image/*" capture="environment">
-        </div>
-        <img id="preview" alt="Vista previa de la foto">
-        
         <div id="location">Ubicación GPS: Esperando...</div>
         <div id="map-container">
             <div id="map">
                 <button type="button" id="map-toggle" onclick="toggleMapLayer()">🛰️</button>
             </div>
+        </div>
+        
+        <div class="photo-input-container">
+            <img id="preview" alt="Vista previa de la foto">
+            <label for="photo" id="photoLabel" class="photo-input-label">Tomar foto del puesto</label>
+            <input type="file" id="photo" accept="image/*" capture="environment">
         </div>
         
         <div id="upload-options">
@@ -424,6 +437,13 @@
                 reader.onload = function(e) {
                     document.getElementById("preview").src = e.target.result;
                     document.getElementById("preview").style.display = "block";
+                    // Scroll to bottom after preview shows
+                    setTimeout(() => {
+                        window.scrollTo({
+                            top: document.body.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }, 100);
                 };
                 reader.readAsDataURL(file);
                 // Cambiar texto a retomar foto
