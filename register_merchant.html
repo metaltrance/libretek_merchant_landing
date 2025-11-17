@@ -156,30 +156,41 @@
             position: relative;
             animation: drawCircle 1s ease-in-out;
         }
-        .checkmark-check {
-            position: absolute;
-            top: 25px;
-            left: 20px;
-            width: 40px;
-            height: 6px;
-            background: #4CAF50;
-            transform: rotate(-45deg);
-            border-radius: 3px;
-            animation: drawCheck1 0.3s ease 1s forwards;
+        .checkmark::after {
             opacity: 0;
+            height: 40px;
+            width: 20px;
+            transform-origin: left top;
+            border-right: 5px solid #4CAF50;
+            border-top: 5px solid #4CAF50;
+            content: "";
+            left: 30px;
+            top: 40px;
+            position: absolute;
+            animation: checkmark 0.8s ease 1s forwards;
+            transform: scaleX(-1) rotate(135deg);
         }
-        .checkmark-check::after {
-            content: '';
-            position: absolute;
-            width: 25px;
-            height: 6px;
-            background: #4CAF50;
-            transform: rotate(45deg);
-            left: 20px;
-            top: -4px;
-            border-radius: 3px;
-            animation: drawCheck2 0.3s ease 1.3s forwards;
-            opacity: 0;
+        @keyframes checkmark {
+            0% {
+                height: 0;
+                width: 0;
+                opacity: 1;
+            }
+            20% {
+                height: 0;
+                width: 20px;
+                opacity: 1;
+            }
+            40% {
+                height: 40px;
+                width: 20px;
+                opacity: 1;
+            }
+            100% {
+                height: 40px;
+                width: 20px;
+                opacity: 1;
+            }
         }
         .success-message {
             font-size: 24px;
@@ -273,14 +284,6 @@
             0% { transform: scale(0); }
             100% { transform: scale(1); }
         }
-        @keyframes drawCheck1 {
-            0% { width: 0; left: 20px; opacity: 1; }
-            100% { width: 40px; opacity: 1; }
-        }
-        @keyframes drawCheck2 {
-            0% { width: 0; opacity: 1; }
-            100% { width: 25px; opacity: 1; }
-        }
     </style>
 </head>
 <body>
@@ -324,7 +327,6 @@
         <div class="checkmark-container">
             <div class="checkmark">
                 <div class="checkmark-circle"></div>
-                <div class="checkmark-check"></div>
             </div>
             <div class="success-message">¡Éxito!</div>
             <div class="success-celebration">¡Felicitaciones! Tu comercio ahora acepta Bitcoin y atraerá más clientes. ¡Celebremos este paso hacia el futuro financiero!</div>
@@ -519,6 +521,7 @@
             document.getElementById("photoLabel").textContent = "Tomar foto del puesto";
             document.getElementById("photoLabel").classList.remove("retake");
             getLocation();
+            document.getElementById("submitBtn").disabled = false;
         }
         
         function showFailure() {
@@ -532,30 +535,6 @@
             const overlay = document.getElementById("failureOverlay");
             overlay.classList.remove("show");
             document.getElementById("submitBtn").disabled = false;
-        }
-        
-        // Función para agregar comentario con imagen
-        async function addImageComment(commentBody, base64Image, altText) {
-            const imageMarkdown = `![${altText}](data:image/png;base64,${base64Image})`;
-            const fullBody = `${commentBody}\n\n${imageMarkdown}`;
-            
-            const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
-            const commentResponse = await fetch(commentUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `token ${TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    body: fullBody
-                })
-            });
-            
-            if (!commentResponse.ok) {
-                console.warn('Comentario con imagen no agregado:', commentResponse.status);
-            } else {
-                console.log('Comment added with image');
-            }
         }
         
         document.getElementById("registrationForm").addEventListener("submit", async function(event) {
@@ -608,7 +587,26 @@
                         reader.onload = async function(e) {
                             try {
                                 const base64Image = e.target.result.split(',')[1]; // Solo el base64 sin prefix
-                                await addImageComment('Foto del comercio:', base64Image, 'Foto del comercio');
+                                const imageMarkdown = `![Foto del comercio](data:image/jpeg;base64,${base64Image})`;
+                                const fullBody = `Foto del comercio:\n\n${imageMarkdown}`;
+                                
+                                const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
+                                const commentResponse = await fetch(commentUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `token ${TOKEN}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        body: fullBody
+                                    })
+                                });
+                                
+                                if (!commentResponse.ok) {
+                                    console.warn('Comentario con foto no agregado:', commentResponse.status);
+                                } else {
+                                    console.log('Comment added with photo');
+                                }
                                 resolve();
                             } catch (err) {
                                 console.error('Error adding photo comment:', err);
@@ -636,7 +634,26 @@
                             try {
                                 const base64Image = canvas.toDataURL('image/png').split(',')[1];
                                 const viewType = isSatellite ? 'Satelital' : 'Estándar';
-                                await addImageComment(`Captura del mapa (${viewType}):`, base64Image, `Mapa ${viewType}`);
+                                const imageMarkdown = `![Mapa ${viewType}](data:image/png;base64,${base64Image})`;
+                                const fullBody = `Captura del mapa (${viewType}):\n\n${imageMarkdown}`;
+                                
+                                const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
+                                const commentResponse = await fetch(commentUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `token ${TOKEN}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        body: fullBody
+                                    })
+                                });
+                                
+                                if (!commentResponse.ok) {
+                                    console.warn('Comentario con mapa no agregado:', commentResponse.status);
+                                } else {
+                                    console.log('Comment added with map');
+                                }
                                 resolve();
                             } catch (err) {
                                 console.error('Error adding map comment:', err);
@@ -653,7 +670,6 @@
                 console.error('Error:', error);
                 hideLoading();
                 showFailure();
-                submitBtn.disabled = false;
             }
         });
     </script>
