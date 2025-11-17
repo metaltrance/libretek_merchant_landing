@@ -349,6 +349,9 @@
         <label for="name">Nombre del Comercio:</label>
         <input type="text" id="name" required>
         
+        <label for="phone">Teléfono del Comercio:</label>
+        <input type="tel" id="phone" required placeholder="+595 ...">
+        
         <label for="lightning">Dirección Lightning (de Blink para tips):</label>
         <input type="text" id="lightning" required>
         
@@ -447,6 +450,7 @@
                 clickCount++;
                 if (clickCount >= 5) {
                     document.getElementById("upload-options").style.display = 'block';
+                    document.getElementById("options-toggle").style.display = 'inline-block';
                     clickCount = 0; // Reset counter
                 }
             });
@@ -498,6 +502,12 @@
                 map.removeLayer(satelliteLayer);
                 map.addLayer(osmLayer);
             }
+            // Force refresh on iOS/mobile
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize();
+                }
+            }, 100);
         }
         
         function showMapSpinner() {
@@ -516,7 +526,11 @@
         function getLocation() {
             if (navigator.geolocation) {
                 showMapSpinner();
-                navigator.geolocation.getCurrentPosition(showPosition, showError);
+                navigator.geolocation.getCurrentPosition(showPosition, showError, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
             } else {
                 alert("La geolocalización no es compatible con este navegador.");
                 document.getElementById("location").innerText = "Geolocalización no disponible.";
@@ -530,7 +544,7 @@
             
             // Crear o actualizar mapa
             if (!map) {
-                map = L.map('map').setView([lat, lon], 19); // Maximum zoom (19 for OSM)
+                map = L.map('map').setView([lat, lon], 18); // Reduced zoom to 18 for better iOS compatibility
                 
                 // Capa estándar (OSM)
                 osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -561,7 +575,7 @@
                 
                 map.clickHandlerAdded = true;
             } else {
-                map.setView([lat, lon], 19);
+                map.setView([lat, lon], 18);
             }
             
             hideMapSpinner();
@@ -636,6 +650,7 @@
             document.getElementById("upload-map-standard").checked = true;
             document.getElementById("upload-map-satellite").checked = true;
             document.getElementById("upload-options").style.display = 'none';
+            document.getElementById("options-toggle").style.display = 'none';
             getLocation();
             document.getElementById("submitBtn").disabled = false;
             clickCount = 0;
@@ -657,13 +672,20 @@
         // Función para capturar mapa y agregar comentario
         async function captureAndAddMap(issueIndex, viewType) {
             try {
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar para tiles
+                // Increased timeout for better tile loading, especially satellite on iOS
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Force refresh before capture
+                if (map) {
+                    map.invalidateSize();
+                }
                 
                 const canvas = await html2canvas(document.getElementById('map'), {
                     backgroundColor: null,
                     scale: 1,
                     useCORS: true,
-                    allowTaint: true
+                    allowTaint: true,
+                    logging: false // Reduce console noise
                 });
                 
                 const base64Image = canvas.toDataURL('image/png').split(',')[1];
@@ -696,6 +718,7 @@
             event.preventDefault();
             const submitBtn = document.getElementById("submitBtn");
             const name = document.getElementById("name").value;
+            const phone = document.getElementById("phone").value;
             const lightning = document.getElementById("lightning").value;
             const photoFile = document.getElementById("photo").files[0];
             const uploadPhoto = document.getElementById("upload-photo").checked;
@@ -711,7 +734,7 @@
             showLoading();
             
             const title = `Nuevo Comercio en Mercado 4: ${name}`;
-            let body = `**Detalles del Comercio:**\n- Nombre: ${name}\n- Dirección Lightning: ${lightning}\n- Ubicación GPS: ${lat}, ${lon}\n\nPor favor, agrega este comercio a BTCMap (crea un issue en GitHub si es necesario) y visita para entregar el bono de $35 y demostrar una compra con Bitcoin.`;
+            let body = `**Detalles del Comercio:**\n- Nombre: ${name}\n- Teléfono: ${phone}\n- Dirección Lightning: ${lightning}\n- Ubicación GPS: ${lat}, ${lon}\n\nPor favor, agrega este comercio a BTCMap (crea un issue en GitHub si es necesario) y visita para entregar el bono de $35 y demostrar una compra con Bitcoin.`;
             let issueIndex = null;
             
             try {
@@ -738,7 +761,7 @@
                 
                 console.log('Issue created:', issueData);
                 
-                // Paso 2: Foto si existe y seleccionada
+                // Paso 2: Foto si existe y seleccionada (parallelizable but kept sequential for simplicity)
                 if (photoFile && uploadPhoto) {
                     const photoPromise = new Promise((resolve, reject) => {
                         const reader = new FileReader();
@@ -777,24 +800,26 @@
                     await photoPromise;
                 }
                 
-                // Paso 3: Capturar mapas si seleccionados
+                // Paso 3: Capturar mapas si seleccionados (parallelize standard and satellite to reduce time)
                 const wasSatellite = isSatellite;
+                const mapPromises = [];
                 
                 if (uploadMapStandard) {
                     if (isSatellite) {
                         toggleMapLayer(); // Cambiar a estándar
-                        await new Promise(resolve => setTimeout(resolve, 1000));
                     }
-                    await captureAndAddMap(issueIndex, 'Estándar');
+                    mapPromises.push(captureAndAddMap(issueIndex, 'Estándar'));
                 }
                 
                 if (uploadMapSatellite) {
                     if (!isSatellite) {
                         toggleMapLayer(); // Cambiar a satelital
-                        await new Promise(resolve => setTimeout(resolve, 1000));
                     }
-                    await captureAndAddMap(issueIndex, 'Satelital');
+                    mapPromises.push(captureAndAddMap(issueIndex, 'Satelital'));
                 }
+                
+                // Wait for all map captures in parallel
+                await Promise.all(mapPromises);
                 
                 // Restaurar vista original si se cambió
                 if (wasSatellite !== isSatellite) {
