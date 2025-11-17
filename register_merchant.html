@@ -35,6 +35,11 @@
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(247, 147, 26, 0.2);
         }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
         #location { margin: 10px 0; font-style: italic; }
         #map { height: 300px; margin: 10px 0; display: none; position: relative; }
         #map-toggle { 
@@ -76,8 +81,8 @@
             display: none; /* Hide default file input */
         }
         
-        /* Success Overlay */
-        .success-overlay {
+        /* Overlay Base Styles */
+        .overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -91,10 +96,44 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-        .success-overlay.show {
+        .overlay.show {
             display: flex;
             opacity: 1;
         }
+        .overlay-container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: scaleIn 0.5s ease-out;
+        }
+        
+        /* Loading Overlay */
+        .spinner-container {
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #f7931a;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        .loading-message {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Success Overlay */
         .checkmark-container {
             text-align: center;
             background: white;
@@ -158,6 +197,74 @@
             font-size: 14px;
             color: #666;
         }
+        
+        /* Failure Overlay */
+        .failure-container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: scaleIn 0.5s ease-out;
+        }
+        .xmark {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+        }
+        .xmark-circle {
+            width: 80px;
+            height: 80px;
+            border: 6px solid #f44336;
+            border-radius: 50%;
+            position: relative;
+            animation: drawCircle 1s ease-in-out;
+        }
+        .xmark-line1 {
+            position: absolute;
+            background: #f44336;
+            height: 6px;
+            width: 50px;
+            top: 37px;
+            left: 15px;
+            transform: rotate(45deg);
+            border-radius: 3px;
+            animation: drawX1 0.3s ease 1s forwards;
+            opacity: 0;
+        }
+        .xmark-line2 {
+            position: absolute;
+            background: #f44336;
+            height: 6px;
+            width: 50px;
+            top: 37px;
+            left: 15px;
+            transform: rotate(-45deg);
+            border-radius: 3px;
+            animation: drawX2 0.3s ease 1.3s forwards;
+            opacity: 0;
+        }
+        .failure-message {
+            font-size: 24px;
+            color: #f44336;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .failure-text {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        @keyframes drawX1 {
+            0% { width: 0; opacity: 1; }
+            100% { width: 50px; opacity: 1; }
+        }
+        @keyframes drawX2 {
+            0% { width: 0; opacity: 1; }
+            100% { width: 50px; opacity: 1; }
+        }
+        
         @keyframes scaleIn {
             0% { transform: scale(0); }
             100% { transform: scale(1); }
@@ -201,11 +308,19 @@
         </div>
         
         <button type="button" onclick="getLocation()">Recapturar Ubicación</button>
-        <button type="submit">Enviar y Registrarme</button>
+        <button type="submit" id="submitBtn">Enviar y Registrarme</button>
     </form>
     
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="overlay loading-overlay">
+        <div class="spinner-container overlay-container">
+            <div class="spinner"></div>
+            <div class="loading-message">Subiendo...</div>
+        </div>
+    </div>
+    
     <!-- Success Overlay -->
-    <div id="successOverlay" class="success-overlay">
+    <div id="successOverlay" class="overlay success-overlay">
         <div class="checkmark-container">
             <div class="checkmark">
                 <div class="checkmark-circle"></div>
@@ -215,6 +330,20 @@
             <div class="success-celebration">¡Felicitaciones! Tu comercio ahora acepta Bitcoin y atraerá más clientes. ¡Celebremos este paso hacia el futuro financiero!</div>
             <div class="success-issue" id="issueIdDisplay"></div>
             <button onclick="closeSuccess()" style="padding: 10px 20px; background: #f7931a; color: white; border: none; border-radius: 5px; cursor: pointer;">Cerrar</button>
+        </div>
+    </div>
+    
+    <!-- Failure Overlay -->
+    <div id="failureOverlay" class="overlay failure-overlay">
+        <div class="failure-container">
+            <div class="xmark">
+                <div class="xmark-circle"></div>
+                <div class="xmark-line1"></div>
+                <div class="xmark-line2"></div>
+            </div>
+            <div class="failure-message">Error</div>
+            <div class="failure-text">Error de conexión. Por favor, intenta de nuevo.</div>
+            <button onclick="closeFailure()" style="padding: 10px 20px; background: #f7931a; color: white; border: none; border-radius: 5px; cursor: pointer;">Cerrar</button>
         </div>
     </div>
     
@@ -365,6 +494,14 @@
             document.getElementById("location").innerText = message;
         }
         
+        function showLoading() {
+            document.getElementById("loadingOverlay").classList.add("show");
+        }
+        
+        function hideLoading() {
+            document.getElementById("loadingOverlay").classList.remove("show");
+        }
+        
         function showSuccess(issueIndex) {
             document.getElementById("issueIdDisplay").innerText = `Issue ID: ${issueIndex}`;
             const overlay = document.getElementById("successOverlay");
@@ -384,8 +521,46 @@
             getLocation();
         }
         
+        function showFailure() {
+            const overlay = document.getElementById("failureOverlay");
+            overlay.classList.add("show");
+            // Auto-close after 5 seconds
+            setTimeout(closeFailure, 5000);
+        }
+        
+        function closeFailure() {
+            const overlay = document.getElementById("failureOverlay");
+            overlay.classList.remove("show");
+            document.getElementById("submitBtn").disabled = false;
+        }
+        
+        // Función para agregar comentario con imagen
+        async function addImageComment(commentBody, base64Image, altText) {
+            const imageMarkdown = `![${altText}](data:image/png;base64,${base64Image})`;
+            const fullBody = `${commentBody}\n\n${imageMarkdown}`;
+            
+            const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
+            const commentResponse = await fetch(commentUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    body: fullBody
+                })
+            });
+            
+            if (!commentResponse.ok) {
+                console.warn('Comentario con imagen no agregado:', commentResponse.status);
+            } else {
+                console.log('Comment added with image');
+            }
+        }
+        
         document.getElementById("registrationForm").addEventListener("submit", async function(event) {
             event.preventDefault();
+            const submitBtn = document.getElementById("submitBtn");
             const name = document.getElementById("name").value;
             const lightning = document.getElementById("lightning").value;
             const photoFile = document.getElementById("photo").files[0];
@@ -395,8 +570,12 @@
                 return;
             }
             
+            submitBtn.disabled = true;
+            showLoading();
+            
             const title = `Nuevo Comercio en Mercado 4: ${name}`;
             let body = `**Detalles del Comercio:**\n- Nombre: ${name}\n- Dirección Lightning: ${lightning}\n- Ubicación GPS: ${lat}, ${lon}\n\nPor favor, agrega este comercio a BTCMap (crea un issue en GitHub si es necesario) y visita para entregar el bono de $35 y demostrar una compra con Bitcoin.`;
+            let issueIndex = null;
             
             try {
                 // Paso 1: Crear el issue (directo, sin proxy)
@@ -418,42 +597,28 @@
                 }
                 
                 const issueData = await issueResponse.json();
-                const issueIndex = issueData.number; // Usar 'number' del response de Gitea
+                issueIndex = issueData.number; // Usar 'number' del response de Gitea
                 
                 console.log('Issue created:', issueData); // Para debug
                 
-                // Función para agregar comentario con imagen
-                async function addImageComment(commentBody, base64Image, altText) {
-                    const imageMarkdown = `![${altText}](data:image/png;base64,${base64Image})`;
-                    const fullBody = `${commentBody}\n\n${imageMarkdown}`;
-                    
-                    const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
-                    const commentResponse = await fetch(commentUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `token ${TOKEN}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            body: fullBody
-                        })
-                    });
-                    
-                    if (!commentResponse.ok) {
-                        console.warn('Comentario con imagen no agregado:', commentResponse.status);
-                    } else {
-                        console.log('Comment added with image');
-                    }
-                }
-                
                 // Paso 2: Si hay foto, leer como base64 y agregar como comentario
                 if (photoFile) {
-                    const reader = new FileReader();
-                    reader.onload = async function(e) {
-                        const base64Image = e.target.result.split(',')[1]; // Solo el base64 sin prefix
-                        await addImageComment('Foto del comercio:', base64Image, 'Foto del comercio');
-                    };
-                    reader.readAsDataURL(photoFile);
+                    const photoPromise = new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = async function(e) {
+                            try {
+                                const base64Image = e.target.result.split(',')[1]; // Solo el base64 sin prefix
+                                await addImageComment('Foto del comercio:', base64Image, 'Foto del comercio');
+                                resolve();
+                            } catch (err) {
+                                console.error('Error adding photo comment:', err);
+                                resolve(); // Proceed anyway
+                            }
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(photoFile);
+                    });
+                    await photoPromise;
                 }
                 
                 // Paso 3: Capturar mapa como imagen y agregar comentario
@@ -461,25 +626,34 @@
                     // Esperar un poco para que las tiles se carguen completamente
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     
-                    html2canvas(document.getElementById('map'), {
-                        backgroundColor: null,
-                        scale: 1,
-                        useCORS: true,
-                        allowTaint: true
-                    }).then(async (canvas) => {
-                        const base64Image = canvas.toDataURL('image/png').split(',')[1];
-                        const viewType = isSatellite ? 'Satelital' : 'Estándar';
-                        await addImageComment(`Captura del mapa (${viewType}):`, base64Image, `Mapa ${viewType}`);
-                    }).catch(err => {
-                        console.error('Error capturing map:', err);
+                    const mapPromise = new Promise((resolve, reject) => {
+                        html2canvas(document.getElementById('map'), {
+                            backgroundColor: null,
+                            scale: 1,
+                            useCORS: true,
+                            allowTaint: true
+                        }).then(async (canvas) => {
+                            try {
+                                const base64Image = canvas.toDataURL('image/png').split(',')[1];
+                                const viewType = isSatellite ? 'Satelital' : 'Estándar';
+                                await addImageComment(`Captura del mapa (${viewType}):`, base64Image, `Mapa ${viewType}`);
+                                resolve();
+                            } catch (err) {
+                                console.error('Error adding map comment:', err);
+                                resolve(); // Proceed anyway
+                            }
+                        }).catch(reject);
                     });
+                    await mapPromise;
                 }
                 
-                // Mostrar overlay de éxito en lugar de alert
+                hideLoading();
                 showSuccess(issueIndex);
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error de conexión: ' + error.message + '. Por favor, contacta al grupo manualmente.');
+                hideLoading();
+                showFailure();
+                submitBtn.disabled = false;
             }
         });
     </script>
