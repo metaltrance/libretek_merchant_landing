@@ -57,26 +57,26 @@
             height: 100%;
             width: auto;
         }
+        #registerButton {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #registerButton:hover {
+            background-color: #0056b3;
+        }
         #qrcode {
             border: 1px solid #ccc;
             padding: 10px;
             background: white;
             cursor: pointer; /* Indicate tappable */
-        }
-        #urlDisplay {
-            font-size: 18px;
-            margin-top: 10px;
-            font-weight: bold;
-            word-break: break-all;
-            text-align: center;
-            max-width: 300px;
-        }
-        #urlDisplay a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        #urlDisplay a:hover {
-            text-decoration: underline;
         }
         #urlField {
             margin-top: 10px;
@@ -103,17 +103,18 @@
     </div>
     <h1>Escanea el Código QR o abre la URL para registrarte como comerciante</h1>
     <div id="qrcode"></div>
-    <p id="urlDisplay"></p>
+    <a id="registerButton" href="#" target="_blank">Registrarse como comerciante</a>
     <input type="text" id="urlField" placeholder="Ingresa URL para regenerar QR">
     <div id="error"></div>
 
     <script>
         const urlInput = document.getElementById('urlField');
-        const urlDisplay = document.getElementById('urlDisplay');
+        const registerButton = document.getElementById('registerButton');
         const qrcodeDiv = document.getElementById('qrcode');
         const errorDiv = document.getElementById('error');
         let clickCount = 0;
         let currentQrImg = null;
+        let currentUrl = 'https://libretek-merchant-landing.pages.dev/register_merchant';
 
         function generateQR(url) {
             // Clear previous image
@@ -147,7 +148,8 @@
             };
 
             qrcodeDiv.appendChild(currentQrImg);
-            urlDisplay.innerHTML = `URL Actual: <a href="${url}" target="_blank">${url}</a>`;
+            currentUrl = url;
+            registerButton.href = url;
             errorDiv.textContent = ''; // Clear errors
         }
 
@@ -160,9 +162,8 @@
         });
 
         // Initial generation
-        const initialUrl = 'https://libretek-merchant-landing.pages.dev/register_merchant';
-        urlInput.value = initialUrl; // Set default URL
-        generateQR(initialUrl);
+        urlInput.value = currentUrl; // Set default URL
+        generateQR(currentUrl);
     </script>
 </body>
 </html>
