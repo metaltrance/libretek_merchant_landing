@@ -252,8 +252,7 @@
             lon = position.coords.longitude;
             document.getElementById("location").innerText = `Ubicación GPS: ${lat}, ${lon}`;
             
-            // Mostrar el mapa inmediatamente
-            document.getElementById("map").style.display = "block";
+            // Crear o actualizar mapa
             if (!map) {
                 map = L.map('map').setView([lat, lon], 15);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -263,6 +262,9 @@
                 map.setView([lat, lon], 15);
             }
             
+            document.getElementById("map").style.display = "block";
+            
+            // Crear o actualizar marcador
             if (marker) {
                 marker.setLatLng([lat, lon]);
             } else {
@@ -272,6 +274,19 @@
                     lon = e.target.getLatLng().lng;
                     document.getElementById("location").innerText = `Ubicación GPS: ${lat}, ${lon}`;
                 });
+            }
+            
+            // Añadir manejador de click en el mapa (solo si no existe ya)
+            if (!map.clickHandlerAdded) {
+                map.on('click', function(e) {
+                    if (marker) {
+                        marker.setLatLng(e.latlng);
+                        lat = e.latlng.lat;
+                        lon = e.latlng.lng;
+                        document.getElementById("location").innerText = `Ubicación GPS: ${lat}, ${lon}`;
+                    }
+                });
+                map.clickHandlerAdded = true; // Flag para evitar duplicados
             }
         }
         
