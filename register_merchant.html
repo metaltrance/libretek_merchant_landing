@@ -12,6 +12,80 @@
         #location { margin: 10px 0; font-style: italic; }
         #map { height: 300px; margin: 10px 0; display: none; }
         #preview { max-width: 100%; margin: 10px 0; display: none; }
+        
+        /* Success Overlay */
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .success-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+        .checkmark-container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: scaleIn 0.5s ease-out;
+        }
+        .checkmark {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #4CAF50;
+            position: relative;
+            margin: 0 auto 20px;
+            animation: pulse 1s ease-in-out infinite;
+        }
+        .checkmark::before,
+        .checkmark::after {
+            content: '';
+            position: absolute;
+            background: white;
+        }
+        .checkmark::before {
+            width: 6px;
+            height: 30px;
+            left: 42px;
+            top: 20px;
+            transform: rotate(45deg);
+        }
+        .checkmark::after {
+            width: 6px;
+            height: 50px;
+            left: 30px;
+            top: 35px;
+            transform: rotate(-45deg);
+        }
+        .success-message {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .success-issue {
+            font-size: 14px;
+            color: #666;
+        }
+        @keyframes scaleIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
     </style>
 </head>
 <body>
@@ -35,6 +109,16 @@
         <button type="button" onclick="getLocation()">Recapturar Ubicación</button>
         <button type="submit">Enviar y Registrarme</button>
     </form>
+    
+    <!-- Success Overlay -->
+    <div id="successOverlay" class="success-overlay">
+        <div class="checkmark-container">
+            <div class="checkmark"></div>
+            <div class="success-message">¡Registro exitoso!</div>
+            <div class="success-issue" id="issueIdDisplay"></div>
+            <button onclick="closeSuccess()" style="padding: 10px 20px; background: #f7931a; color: white; border: none; border-radius: 5px; cursor: pointer;">Cerrar</button>
+        </div>
+    </div>
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -124,6 +208,23 @@
             document.getElementById("location").innerText = message;
         }
         
+        function showSuccess(issueIndex) {
+            document.getElementById("issueIdDisplay").innerText = `Issue ID: ${issueIndex}`;
+            const overlay = document.getElementById("successOverlay");
+            overlay.classList.add("show");
+            // Auto-close after 5 seconds
+            setTimeout(closeSuccess, 5000);
+        }
+        
+        function closeSuccess() {
+            const overlay = document.getElementById("successOverlay");
+            overlay.classList.remove("show");
+            // Reset form after close
+            document.getElementById("registrationForm").reset();
+            document.getElementById("preview").style.display = "none";
+            getLocation();
+        }
+        
         document.getElementById("registrationForm").addEventListener("submit", async function(event) {
             event.preventDefault();
             const name = document.getElementById("name").value;
@@ -191,11 +292,8 @@
                     reader.readAsDataURL(photoFile);
                 }
                 
-                alert('¡Registro enviado exitosamente! Un bitcoiner te contactará pronto. Issue ID: ' + issueIndex);
-                // Opcional: Limpiar formulario
-                document.getElementById("registrationForm").reset();
-                document.getElementById("preview").style.display = "none";
-                getLocation(); // Recargar ubicación
+                // Mostrar overlay de éxito en lugar de alert
+                showSuccess(issueIndex);
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error de conexión: ' + error.message + '. Por favor, contacta al grupo manualmente.');
