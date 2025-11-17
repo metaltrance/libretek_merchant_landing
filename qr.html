@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Generator</title>
+    <title>Generador de Código QR</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,6 +14,44 @@
             height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://cryptologos.cc/logos/bitcoin-btc-logo.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.1;
+            z-index: -1;
+        }
+        #topText {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #333;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .button:hover {
+            background-color: #0056b3;
         }
         #qrcode {
             border: 1px solid #ccc;
@@ -43,10 +81,15 @@
     </style>
 </head>
 <body>
-    <h1>Scan the QR Code</h1>
+    <p id="topText">Instala Blink para aceptar Bitcoin</p>
+    <div class="buttons">
+        <a href="https://play.google.com/store/apps/details?id=com.galoyapp" class="button" target="_blank">Android</a>
+        <a href="https://apps.apple.com/app/blink-bitcoin-wallet/id1531383905" class="button" target="_blank">App Store</a>
+    </div>
+    <h1>Escanea el Código QR</h1>
     <div id="qrcode"></div>
     <p id="urlDisplay"></p>
-    <input type="text" id="urlField" placeholder="Enter URL to regenerate QR">
+    <input type="text" id="urlField" placeholder="Ingresa URL para regenerar QR">
     <div id="error"></div>
 
     <script>
@@ -64,13 +107,13 @@
             }
 
             if (!url) {
-                errorDiv.textContent = 'Error: No URL provided.';
+                errorDiv.textContent = 'Error: No se proporcionó URL.';
                 return;
             }
 
             currentQrImg = document.createElement('img');
             currentQrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=256`;
-            currentQrImg.alt = 'QR Code';
+            currentQrImg.alt = 'Código QR';
             currentQrImg.style.cursor = 'pointer'; // Make image tappable
 
             // Reset click count and add tap handler
@@ -85,11 +128,11 @@
             };
 
             currentQrImg.onerror = function() {
-                errorDiv.textContent = 'Error loading QR code. Check your internet connection or try a different URL.';
+                errorDiv.textContent = 'Error al cargar el código QR. Verifica tu conexión a internet o prueba una URL diferente.';
             };
 
             qrcodeDiv.appendChild(currentQrImg);
-            urlDisplay.textContent = `Current URL: ${url}`;
+            urlDisplay.textContent = `URL Actual: ${url}`;
             errorDiv.textContent = ''; // Clear errors
         }
 
@@ -102,7 +145,7 @@
         });
 
         // Initial generation
-        const initialUrl = urlInput.value || 'https://libretek-merchant-landing.pages.dev/register_merchant';
+        const initialUrl = urlInput.value || 'https://example.com';
         urlInput.value = initialUrl; // Ensure value is set
         generateQR(initialUrl);
     </script>
