@@ -156,41 +156,30 @@
             position: relative;
             animation: drawCircle 1s ease-in-out;
         }
-        .checkmark::after {
-            opacity: 0;
-            height: 40px;
-            width: 20px;
-            transform-origin: left top;
-            border-right: 5px solid #4CAF50;
-            border-top: 5px solid #4CAF50;
-            content: "";
-            left: 30px;
-            top: 40px;
+        .checkmark-check {
             position: absolute;
-            animation: checkmark 0.8s ease 1s forwards;
-            transform: scaleX(-1) rotate(135deg);
+            top: 25px;
+            left: 20px;
+            width: 40px;
+            height: 6px;
+            background: #4CAF50;
+            transform: rotate(-45deg);
+            border-radius: 3px;
+            animation: drawCheck1 0.3s ease 1s forwards;
+            opacity: 0;
         }
-        @keyframes checkmark {
-            0% {
-                height: 0;
-                width: 0;
-                opacity: 1;
-            }
-            20% {
-                height: 0;
-                width: 20px;
-                opacity: 1;
-            }
-            40% {
-                height: 40px;
-                width: 20px;
-                opacity: 1;
-            }
-            100% {
-                height: 40px;
-                width: 20px;
-                opacity: 1;
-            }
+        .checkmark-check::after {
+            content: '';
+            position: absolute;
+            width: 25px;
+            height: 6px;
+            background: #4CAF50;
+            transform: rotate(45deg);
+            left: 20px;
+            top: -4px;
+            border-radius: 3px;
+            animation: drawCheck2 0.3s ease 1.3s forwards;
+            opacity: 0;
         }
         .success-message {
             font-size: 24px;
@@ -284,6 +273,14 @@
             0% { transform: scale(0); }
             100% { transform: scale(1); }
         }
+        @keyframes drawCheck1 {
+            0% { width: 0; left: 20px; opacity: 1; }
+            100% { width: 40px; opacity: 1; }
+        }
+        @keyframes drawCheck2 {
+            0% { width: 0; opacity: 1; }
+            100% { width: 25px; opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -327,6 +324,7 @@
         <div class="checkmark-container">
             <div class="checkmark">
                 <div class="checkmark-circle"></div>
+                <div class="checkmark-check"></div>
             </div>
             <div class="success-message">¡Éxito!</div>
             <div class="success-celebration">¡Felicitaciones! Tu comercio ahora acepta Bitcoin y atraerá más clientes. ¡Celebremos este paso hacia el futuro financiero!</div>
@@ -408,7 +406,7 @@
         }
         
         function getLocation() {
-            if (navigator.geolocation) {
+            if (navigator.geolocati on) {
                 navigator.geolocation.getCurrentPosition(showPosition, showError);
             } else {
                 alert("La geolocalización no es compatible con este navegador.");
@@ -537,6 +535,44 @@
             document.getElementById("submitBtn").disabled = false;
         }
         
+        // Función para capturar mapa y agregar comentario
+        async function captureAndAddMap(issueIndex, viewType) {
+            try {
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar para tiles
+                
+                const canvas = await html2canvas(document.getElementById('map'), {
+                    backgroundColor: null,
+                    scale: 1,
+                    useCORS: true,
+                    allowTaint: true
+                });
+                
+                const base64Image = canvas.toDataURL('image/png').split(',')[1];
+                const imageMarkdown = `![Mapa ${viewType}](data:image/png;base64,${base64Image})`;
+                const fullBody = `Captura del mapa (${viewType}):\n\n${imageMarkdown}`;
+                
+                const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
+                const commentResponse = await fetch(commentUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        body: fullBody
+                    })
+                });
+                
+                if (!commentResponse.ok) {
+                    console.warn(`Comentario con mapa ${viewType} no agregado:`, commentResponse.status);
+                } else {
+                    console.log(`Comment added with map ${viewType}`);
+                }
+            } catch (err) {
+                console.error(`Error adding map ${viewType} comment:`, err);
+            }
+        }
+        
         document.getElementById("registrationForm").addEventListener("submit", async function(event) {
             event.preventDefault();
             const submitBtn = document.getElementById("submitBtn");
@@ -544,7 +580,7 @@
             const lightning = document.getElementById("lightning").value;
             const photoFile = document.getElementById("photo").files[0];
             
-            if (!lat || !lon) {
+            if (!lat || !lon || !map) {
                 alert("Por favor, captura tu ubicación GPS primero.");
                 return;
             }
@@ -557,7 +593,7 @@
             let issueIndex = null;
             
             try {
-                // Paso 1: Crear el issue (directo, sin proxy)
+                // Paso 1: Crear el issue
                 const issueUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues`;
                 const issueResponse = await fetch(issueUrl, {
                     method: 'POST',
@@ -576,17 +612,17 @@
                 }
                 
                 const issueData = await issueResponse.json();
-                issueIndex = issueData.number; // Usar 'number' del response de Gitea
+                issueIndex = issueData.number;
                 
-                console.log('Issue created:', issueData); // Para debug
+                console.log('Issue created:', issueData);
                 
-                // Paso 2: Si hay foto, leer como base64 y agregar como comentario
+                // Paso 2: Foto si existe
                 if (photoFile) {
                     const photoPromise = new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = async function(e) {
                             try {
-                                const base64Image = e.target.result.split(',')[1]; // Solo el base64 sin prefix
+                                const base64Image = e.target.result.split(',')[1];
                                 const imageMarkdown = `![Foto del comercio](data:image/jpeg;base64,${base64Image})`;
                                 const fullBody = `Foto del comercio:\n\n${imageMarkdown}`;
                                 
@@ -610,7 +646,7 @@
                                 resolve();
                             } catch (err) {
                                 console.error('Error adding photo comment:', err);
-                                resolve(); // Proceed anyway
+                                resolve();
                             }
                         };
                         reader.onerror = reject;
@@ -619,49 +655,24 @@
                     await photoPromise;
                 }
                 
-                // Paso 3: Capturar mapa como imagen y agregar comentario
-                if (map) {
-                    // Esperar un poco para que las tiles se carguen completamente
+                // Paso 3: Capturar ambos mapas
+                const wasSatellite = isSatellite;
+                
+                // Asegurar vista estándar y capturar
+                if (isSatellite) {
+                    toggleMapLayer(); // a estándar
                     await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    const mapPromise = new Promise((resolve, reject) => {
-                        html2canvas(document.getElementById('map'), {
-                            backgroundColor: null,
-                            scale: 1,
-                            useCORS: true,
-                            allowTaint: true
-                        }).then(async (canvas) => {
-                            try {
-                                const base64Image = canvas.toDataURL('image/png').split(',')[1];
-                                const viewType = isSatellite ? 'Satelital' : 'Estándar';
-                                const imageMarkdown = `![Mapa ${viewType}](data:image/png;base64,${base64Image})`;
-                                const fullBody = `Captura del mapa (${viewType}):\n\n${imageMarkdown}`;
-                                
-                                const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
-                                const commentResponse = await fetch(commentUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Authorization': `token ${TOKEN}`,
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        body: fullBody
-                                    })
-                                });
-                                
-                                if (!commentResponse.ok) {
-                                    console.warn('Comentario con mapa no agregado:', commentResponse.status);
-                                } else {
-                                    console.log('Comment added with map');
-                                }
-                                resolve();
-                            } catch (err) {
-                                console.error('Error adding map comment:', err);
-                                resolve(); // Proceed anyway
-                            }
-                        }).catch(reject);
-                    });
-                    await mapPromise;
+                }
+                await captureAndAddMap(issueIndex, 'Estándar');
+                
+                // Cambiar a satelital y capturar
+                toggleMapLayer(); // a satelital
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await captureAndAddMap(issueIndex, 'Satelital');
+                
+                // Restaurar vista original
+                if (!wasSatellite) {
+                    toggleMapLayer(); // de vuelta a estándar
                 }
                 
                 hideLoading();
