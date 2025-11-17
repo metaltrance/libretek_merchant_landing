@@ -46,12 +46,12 @@
         if (!url) {
             errorDiv.textContent = 'Error: No URL provided in hidden field.';
         } else {
-            // Use Google Charts API for QR code (no external JS library needed)
+            // Use QuickChart API for QR code (reliable alternative to Google)
             const qrImg = document.createElement('img');
-            qrImg.src = `https://chart.googleapis.com/chart?chs=256x256&cht=qr&chl=${encodeURIComponent(url)}&choe=UTF-8`;
+            qrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=256`;
             qrImg.alt = 'QR Code';
             qrImg.onerror = function() {
-                errorDiv.textContent = 'Error loading QR code. Check your internet connection.';
+                errorDiv.textContent = 'Error loading QR code. Check your internet connection or try a different URL.';
             };
             qrcodeDiv.appendChild(qrImg);
         }
