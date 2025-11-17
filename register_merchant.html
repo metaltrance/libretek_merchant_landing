@@ -24,25 +24,28 @@
             display: block;
             width: 100%;
             padding: 15px;
-            background-color: #f0f0f0;
-            border: 2px dashed #f7931a;
+            background-color: #f7931a;
+            border: none;
             border-radius: 10px;
             text-align: center;
             cursor: pointer;
             font-size: 16px;
             font-weight: bold;
-            color: #333;
+            color: white;
             transition: background-color 0.3s ease;
             margin-bottom: 5px;
         }
         .photo-input-label:hover {
-            background-color: #e0e0e0;
+            background-color: #e6830a;
         }
         .photo-input-label::before {
             content: "📷"; /* Camera icon (Unicode) */
             font-size: 24px;
             display: block;
             margin-bottom: 5px;
+        }
+        .photo-input-label.retake::before {
+            content: "🔄"; /* Refresh icon for retake */
         }
         #photo {
             display: none; /* Hide default file input */
@@ -160,7 +163,7 @@
         <input type="text" id="lightning" required>
         
         <div class="photo-input-container">
-            <label for="photo" class="photo-input-label">Tomar foto del puesto</label>
+            <label for="photo" id="photoLabel" class="photo-input-label">Tomar foto del puesto</label>
             <input type="file" id="photo" accept="image/*" capture="environment">
         </div>
         <img id="preview" alt="Vista previa de la foto">
@@ -205,9 +208,10 @@
             getLocation();
         });
         
-        // Preview de la foto
+        // Preview de la foto y cambio de texto del botón
         document.getElementById("photo").addEventListener("change", function(e) {
             const file = e.target.files[0];
+            const photoLabel = document.getElementById("photoLabel");
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -215,6 +219,14 @@
                     document.getElementById("preview").style.display = "block";
                 };
                 reader.readAsDataURL(file);
+                // Cambiar texto a retomar foto
+                photoLabel.textContent = "Retomar foto del puesto";
+                photoLabel.classList.add("retake");
+            } else {
+                // Reset si se cancela
+                photoLabel.textContent = "Tomar foto del puesto";
+                photoLabel.classList.remove("retake");
+                document.getElementById("preview").style.display = "none";
             }
         });
         
@@ -288,6 +300,8 @@
             // Reset form after close
             document.getElementById("registrationForm").reset();
             document.getElementById("preview").style.display = "none";
+            document.getElementById("photoLabel").textContent = "Tomar foto del puesto";
+            document.getElementById("photoLabel").classList.remove("retake");
             getLocation();
         }
         
