@@ -11,13 +11,14 @@
         button { width: 100%; padding: 10px; background-color: #f7931a; color: white; border: none; cursor: pointer; }
         #location { margin: 10px 0; font-style: italic; }
         #map { height: 300px; margin: 10px 0; display: none; }
+        #preview { max-width: 100%; margin: 10px 0; display: none; }
     </style>
 </head>
 <body>
     <h1>Regístrate para Aceptar Bitcoin</h1>
     <p>Ingresa tus datos y comparte tu ubicación para unirte a BTC Map. Un bitcoiner te visitará con un bono de $35 y te ayudará.</p>
     
-    <form id="registrationForm" enctype="multipart/form-data">
+    <form id="registrationForm">
         <label for="name">Nombre del Comercio:</label>
         <input type="text" id="name" required>
         
@@ -26,6 +27,7 @@
         
         <label for="photo">Foto de tu comercio (usa la cámara):</label>
         <input type="file" id="photo" accept="image/*" capture="environment">
+        <img id="preview" alt="Vista previa de la foto">
         
         <div id="location">Ubicación GPS: Esperando...</div>
         <div id="map"></div>
@@ -37,10 +39,11 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Configuración de Gitea - Reemplaza con tus valores reales
-        const GITEA_URL = 'https://gitea.libretek.com.py'; // Ej: https://gitea.example.com
+        const GITEA_BASE = 'https://gitea.libretek.com.py';
+        const GITEA_API = '/api/v1';
         const TOKEN = '17442f0c25f8383a85f2559340e2385dd97da0bd'; // Genera un token en Gitea > User Settings > Applications
-        const OWNER = 'metaltrance'; // Dueño del repo
-        const REPO = 'register_merchant'; // Nombre del repo donde crear issues
+        const OWNER = 'metaltrance';
+        const REPO = 'register_merchant';
         
         let lat = null;
         let lon = null;
@@ -50,6 +53,19 @@
         // Capturar ubicación al cargar la página
         window.addEventListener('load', function() {
             getLocation();
+        });
+        
+        // Preview de la foto
+        document.getElementById("photo").addEventListener("change", function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById("preview").src = e.target.result;
+                    document.getElementById("preview").style.display = "block";
+                };
+                reader.readAsDataURL(file);
+            }
         });
         
         function getLocation() {
@@ -120,11 +136,12 @@
             }
             
             const title = `Nuevo Comercio en Mercado 4: ${name}`;
-            const body = `**Detalles del Comercio:**\n- Nombre: ${name}\n- Dirección Lightning: ${lightning}\n- Ubicación GPS: ${lat}, ${lon}\n\nPor favor, agrega este comercio a BTCMap (crea un issue en GitHub si es necesario) y visita para entregar el bono de $35 y demostrar una compra con Bitcoin.`;
+            let body = `**Detalles del Comercio:**\n- Nombre: ${name}\n- Dirección Lightning: ${lightning}\n- Ubicación GPS: ${lat}, ${lon}\n\nPor favor, agrega este comercio a BTCMap (crea un issue en GitHub si es necesario) y visita para entregar el bono de $35 y demostrar una compra con Bitcoin.`;
             
             try {
-                // Paso 1: Crear el issue
-                const issueResponse = await fetch(`${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/issues`, {
+                // Paso 1: Crear el issue (directo, sin proxy)
+                const issueUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues`;
+                const issueResponse = await fetch(issueUrl, {
                     method: 'POST',
                     headers: {
                         'Authorization': `token ${TOKEN}`,
@@ -137,35 +154,50 @@
                 });
                 
                 if (!issueResponse.ok) {
-                    throw new Error(`Error al crear issue: ${issueResponse.status}`);
+                    throw new Error(`Error al crear issue: ${issueResponse.status} - ${issueResponse.statusText}`);
                 }
                 
                 const issueData = await issueResponse.json();
-                const issueIndex = issueData.index; // o issueData.number, dependiendo de la versión
+                const issueIndex = issueData.number; // Usar 'number' del response de Gitea
                 
-                // Paso 2: Subir foto como attachment si existe
+                console.log('Issue created:', issueData); // Para debug
+                
+                // Paso 2: Si hay foto, leer como base64 y agregar como comentario
                 if (photoFile) {
-                    const formData = new FormData();
-                    formData.append('attachment', photoFile);
-                    
-                    const uploadResponse = await fetch(`${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/issues/${issueIndex}/assets`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `token ${TOKEN}`
-                        },
-                        body: formData
-                    });
-                    
-                    if (!uploadResponse.ok) {
-                        console.warn('Foto no subida:', uploadResponse.status); // No falla el issue completo
-                    }
+                    const reader = new FileReader();
+                    reader.onload = async function(e) {
+                        const base64Image = e.target.result.split(',')[1]; // Solo el base64 sin prefix
+                        const imageMarkdown = `![Foto del comercio](data:image/jpeg;base64,${base64Image})`;
+                        
+                        // Crear comentario con la imagen embebida
+                        const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
+                        const commentResponse = await fetch(commentUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `token ${TOKEN}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                body: `Foto del comercio:\n\n${imageMarkdown}`
+                            })
+                        });
+                        
+                        if (!commentResponse.ok) {
+                            console.warn('Comentario con foto no agregado:', commentResponse.status);
+                        } else {
+                            console.log('Comment added with photo');
+                        }
+                    };
+                    reader.readAsDataURL(photoFile);
                 }
                 
                 alert('¡Registro enviado exitosamente! Un bitcoiner te contactará pronto. Issue ID: ' + issueIndex);
                 // Opcional: Limpiar formulario
                 document.getElementById("registrationForm").reset();
+                document.getElementById("preview").style.display = "none";
                 getLocation(); // Recargar ubicación
             } catch (error) {
+                console.error('Error:', error);
                 alert('Error de conexión: ' + error.message + '. Por favor, contacta al grupo manualmente.');
             }
         });
