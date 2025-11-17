@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Generator</title>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -24,6 +23,10 @@
         input[type="hidden"] {
             display: none;
         }
+        #error {
+            color: red;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -32,16 +35,26 @@
 
     <h1>Scan the QR Code</h1>
     <div id="qrcode"></div>
+    <div id="error"></div>
 
     <script>
         // Get the URL from the hidden field
         const url = document.getElementById('urlField').value;
+        const qrcodeDiv = document.getElementById('qrcode');
+        const errorDiv = document.getElementById('error');
 
-        // Generate QR code
-        QRCode.toCanvas(document.getElementById('qrcode'), url, { width: 256 }, function (error) {
-            if (error) console.error(error);
-            console.log('QR code generated successfully!');
-        });
+        if (!url) {
+            errorDiv.textContent = 'Error: No URL provided in hidden field.';
+        } else {
+            // Use Google Charts API for QR code (no external JS library needed)
+            const qrImg = document.createElement('img');
+            qrImg.src = `https://chart.googleapis.com/chart?chs=256x256&cht=qr&chl=${encodeURIComponent(url)}&choe=UTF-8`;
+            qrImg.alt = 'QR Code';
+            qrImg.onerror = function() {
+                errorDiv.textContent = 'Error loading QR code. Check your internet connection.';
+            };
+            qrcodeDiv.appendChild(qrImg);
+        }
     </script>
 </body>
 </html>
