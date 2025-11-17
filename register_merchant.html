@@ -72,6 +72,27 @@
             border-radius: 8px;
         }
         
+        /* Map Loading Spinner */
+        .map-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+        }
+        .map-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #f7931a;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         /* Photo Input Styling */
         .photo-input-container {
             position: relative;
@@ -168,10 +189,6 @@
             color: #333;
             margin-bottom: 10px;
             font-weight: bold;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
         
         /* Success Overlay */
@@ -338,7 +355,10 @@
         <div id="location">Ubicación GPS: Esperando...</div>
         <div id="map-container">
             <div id="map">
-                <button type="button" id="map-toggle" onclick="toggleMapLayer()">🛰️</button>
+                <div class="map-loading" id="map-loading">
+                    <div class="map-spinner"></div>
+                </div>
+                <button type="button" id="map-toggle" onclick="toggleMapLayer()" style="display: none;">🛰️</button>
             </div>
         </div>
         
@@ -404,6 +424,11 @@
         const TOKEN = '17442f0c25f8383a85f2559340e2385dd97da0bd'; // Genera un token en Gitea > User Settings > Applications
         const OWNER = 'metaltrance';
         const REPO = 'register_merchant';
+        
+        // Default coordinates for Asunción, Paraguay
+        const DEFAULT_LAT = -25.2637;
+        const DEFAULT_LON = -57.5759;
+        const DEFAULT_ZOOM = 12;
         
         let lat = null;
         let lon = null;
@@ -475,8 +500,22 @@
             }
         }
         
+        function showMapSpinner() {
+            const mapDiv = document.getElementById('map');
+            const spinner = document.getElementById('map-loading');
+            spinner.style.display = 'block';
+            mapDiv.style.display = 'block';
+        }
+        
+        function hideMapSpinner() {
+            const spinner = document.getElementById('map-loading');
+            spinner.style.display = 'none';
+            document.getElementById('map-toggle').style.display = 'block';
+        }
+        
         function getLocation() {
             if (navigator.geolocation) {
+                showMapSpinner();
                 navigator.geolocation.getCurrentPosition(showPosition, showError);
             } else {
                 alert("La geolocalización no es compatible con este navegador.");
@@ -525,7 +564,7 @@
                 map.setView([lat, lon], 19);
             }
             
-            document.getElementById("map").style.display = "block";
+            hideMapSpinner();
             
             // Fix for Android/mobile tile rendering issue
             setTimeout(() => {
@@ -548,6 +587,7 @@
         }
         
         function showError(error) {
+            hideMapSpinner();
             let message = "Error al obtener ubicación: ";
             switch(error.code) {
                 case error.PERMISSION_DENIED:
@@ -563,7 +603,9 @@
                     message += "Error desconocido.";
             }
             alert(message);
-            document.getElementById("location").innerText = message;
+            document.getElementById("location").innerText = message + " Usando ubicación predeterminada de Asunción.";
+            // Use default Asunción coordinates
+            showPosition({ coords: { latitude: DEFAULT_LAT, longitude: DEFAULT_LON } });
         }
         
         function showLoading() {
