@@ -36,7 +36,7 @@
         }
         #location { margin: 10px 0; font-style: italic; }
         #map { height: 300px; margin: 10px 0; display: none; position: relative; }
-        #map-toggle { position: absolute; top: 10px; right: 10px; z-index: 1000; background: white; padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; font-size: 12px; }
+        #map-toggle { position: absolute; top: 10px; left: 10px; z-index: 1000; background: white; padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; font-size: 12px; }
         #preview { max-width: 100%; max-height: 120px; margin: 5px 0; display: none; object-fit: cover; border-radius: 8px; }
         
         /* Photo Input Styling */
@@ -180,7 +180,7 @@
         <div id="location">Ubicación GPS: Esperando...</div>
         <div id="map-container">
             <div id="map"></div>
-            <button id="map-toggle" onclick="toggleMapLayer()">Mapa Satelital</button>
+            <button type="button" id="map-toggle" onclick="toggleMapLayer()">Mapa Satelital</button>
         </div>
         
         <button type="button" onclick="getLocation()">Recapturar Ubicación</button>
