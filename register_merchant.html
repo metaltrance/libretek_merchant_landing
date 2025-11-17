@@ -349,9 +349,6 @@
         <label for="name">Nombre del Comercio:</label>
         <input type="text" id="name" required>
         
-        <label for="phone">Teléfono del Comercio:</label>
-        <input type="tel" id="phone" required placeholder="+595 ...">
-        
         <label for="lightning">Dirección Lightning (de Blink para tips):</label>
         <input type="text" id="lightning" required>
         
@@ -442,6 +439,10 @@
         let isSatellite = false;
         let clickCount = 0;
         
+        // Detect iOS for adjustments
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const mapCaptureTimeout = isIOS ? 3000 : 2000; // Longer wait on iOS
+        
         // Capturar ubicación al cargar la página
         window.addEventListener('load', function() {
             getLocation();
@@ -456,14 +457,49 @@
             });
         });
         
+        // Function to compress image
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const maxWidth = 1024;
+                    const maxHeight = 768;
+                    let { width, height } = img;
+                    
+                    // Resize if too large
+                    if (width > maxWidth) {
+                        height = (height * maxWidth) / width;
+                        width = maxWidth;
+                    }
+                    if (height > maxHeight) {
+                        width = (width * maxHeight) / height;
+                        height = maxHeight;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Compress to JPEG
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    callback(compressedDataUrl);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
         // Preview de la foto y cambio de texto del botón
         document.getElementById("photo").addEventListener("change", function(e) {
             const file = e.target.files[0];
             const photoLabel = document.getElementById("photoLabel");
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById("preview").src = e.target.result;
+                // Use compression for preview too, but lower res for display
+                compressImage(file, function(dataUrl) {
+                    document.getElementById("preview").src = dataUrl;
                     document.getElementById("preview").style.display = "block";
                     // Scroll to bottom after preview shows
                     setTimeout(() => {
@@ -472,8 +508,7 @@
                             behavior: 'smooth'
                         });
                     }, 100);
-                };
-                reader.readAsDataURL(file);
+                });
                 // Cambiar texto a retomar foto
                 photoLabel.textContent = "Retomar foto del puesto";
                 photoLabel.classList.add("retake");
@@ -507,7 +542,7 @@
                 if (map) {
                     map.invalidateSize();
                 }
-            }, 100);
+            }, 200); // Slightly longer on toggle
         }
         
         function showMapSpinner() {
@@ -553,10 +588,10 @@
                     crossOrigin: 'anonymous'
                 });
                 
-                // Capa satelital (Esri WorldImagery - free for non-commercial)
-                satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-                    maxZoom: 19,
+                // Capa satelital (Stadia Alidade Satellite - free, CORS-friendly)
+                satelliteLayer = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}.jpg', {
+                    attribution: '© CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | © <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> © <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+                    maxZoom: 20,
                     crossOrigin: 'anonymous'
                 });
                 
@@ -672,8 +707,8 @@
         // Función para capturar mapa y agregar comentario
         async function captureAndAddMap(issueIndex, viewType) {
             try {
-                // Increased timeout for better tile loading, especially satellite on iOS
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Wait for tiles to load, longer on iOS
+                await new Promise(resolve => setTimeout(resolve, mapCaptureTimeout));
                 
                 // Force refresh before capture
                 if (map) {
@@ -688,7 +723,12 @@
                     logging: false // Reduce console noise
                 });
                 
+                // Check if canvas is valid (not tainted)
                 const base64Image = canvas.toDataURL('image/png').split(',')[1];
+                if (base64Image.length < 100) { // Minimal check for empty
+                    throw new Error('Canvas capture failed');
+                }
+                
                 const imageMarkdown = `![Mapa ${viewType}](data:image/png;base64,${base64Image})`;
                 const fullBody = `Captura del mapa (${viewType}):\n\n${imageMarkdown}`;
                 
@@ -718,7 +758,6 @@
             event.preventDefault();
             const submitBtn = document.getElementById("submitBtn");
             const name = document.getElementById("name").value;
-            const phone = document.getElementById("phone").value;
             const lightning = document.getElementById("lightning").value;
             const photoFile = document.getElementById("photo").files[0];
             const uploadPhoto = document.getElementById("upload-photo").checked;
@@ -734,7 +773,7 @@
             showLoading();
             
             const title = `Nuevo Comercio en Mercado 4: ${name}`;
-            let body = `**Detalles del Comercio:**\n- Nombre: ${name}\n- Teléfono: ${phone}\n- Dirección Lightning: ${lightning}\n- Ubicación GPS: ${lat}, ${lon}\n\nPor favor, agrega este comercio a BTCMap (crea un issue en GitHub si es necesario) y visita para entregar el bono de $35 y demostrar una compra con Bitcoin.`;
+            let body = `**Detalles del Comercio:**\n- Nombre: ${name}\n- Dirección Lightning: ${lightning}\n- Ubicación GPS: ${lat}, ${lon}\n\nPor favor, agrega este comercio a BTCMap (crea un issue en GitHub si es necesario) y visita para entregar el bono de $35 y demostrar una compra con Bitcoin.`;
             let issueIndex = null;
             
             try {
@@ -761,13 +800,12 @@
                 
                 console.log('Issue created:', issueData);
                 
-                // Paso 2: Foto si existe y seleccionada (parallelizable but kept sequential for simplicity)
+                // Paso 2: Foto si existe y seleccionada
                 if (photoFile && uploadPhoto) {
                     const photoPromise = new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = async function(e) {
+                        compressImage(photoFile, async function(compressedDataUrl) {
                             try {
-                                const base64Image = e.target.result.split(',')[1];
+                                const base64Image = compressedDataUrl.split(',')[1];
                                 const imageMarkdown = `![Foto del comercio](data:image/jpeg;base64,${base64Image})`;
                                 const fullBody = `Foto del comercio:\n\n${imageMarkdown}`;
                                 
@@ -793,9 +831,7 @@
                                 console.error('Error adding photo comment:', err);
                                 resolve();
                             }
-                        };
-                        reader.onerror = reject;
-                        reader.readAsDataURL(photoFile);
+                        });
                     });
                     await photoPromise;
                 }
@@ -811,11 +847,13 @@
                     mapPromises.push(captureAndAddMap(issueIndex, 'Estándar'));
                 }
                 
-                if (uploadMapSatellite) {
+                if (uploadMapSatellite && !isIOS) { // Skip satellite on iOS if still issues, or keep for testing
                     if (!isSatellite) {
                         toggleMapLayer(); // Cambiar a satelital
                     }
                     mapPromises.push(captureAndAddMap(issueIndex, 'Satelital'));
+                } else if (uploadMapSatellite && isIOS) {
+                    console.warn('Skipping satellite capture on iOS due to potential CORS/rendering issues');
                 }
                 
                 // Wait for all map captures in parallel
