@@ -35,7 +35,8 @@
             box-shadow: 0 2px 4px rgba(247, 147, 26, 0.2);
         }
         #location { margin: 10px 0; font-style: italic; }
-        #map { height: 300px; margin: 10px 0; display: none; }
+        #map { height: 300px; margin: 10px 0; display: none; position: relative; }
+        #map-toggle { position: absolute; top: 10px; right: 10px; z-index: 1000; background: white; padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; font-size: 12px; }
         #preview { max-width: 100%; max-height: 120px; margin: 5px 0; display: none; object-fit: cover; border-radius: 8px; }
         
         /* Photo Input Styling */
@@ -177,7 +178,10 @@
         <img id="preview" alt="Vista previa de la foto">
         
         <div id="location">Ubicación GPS: Esperando...</div>
-        <div id="map"></div>
+        <div id="map-container">
+            <div id="map"></div>
+            <button id="map-toggle" onclick="toggleMapLayer()">Mapa Satelital</button>
+        </div>
         
         <button type="button" onclick="getLocation()">Recapturar Ubicación</button>
         <button type="submit">Enviar y Registrarme</button>
@@ -210,6 +214,9 @@
         let lon = null;
         let map = null;
         let marker = null;
+        let osmLayer = null;
+        let satelliteLayer = null;
+        let isSatellite = false;
         
         // Capturar ubicación al cargar la página
         window.addEventListener('load', function() {
@@ -238,6 +245,20 @@
             }
         });
         
+        function toggleMapLayer() {
+            isSatellite = !isSatellite;
+            const toggleBtn = document.getElementById("map-toggle");
+            if (isSatellite) {
+                toggleBtn.textContent = "Mapa Estándar";
+                map.removeLayer(osmLayer);
+                map.addLayer(satelliteLayer);
+            } else {
+                toggleBtn.textContent = "Mapa Satelital";
+                map.removeLayer(satelliteLayer);
+                map.addLayer(osmLayer);
+            }
+        }
+        
         function getLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(showPosition, showError);
@@ -255,12 +276,35 @@
             // Crear o actualizar mapa
             if (!map) {
                 map = L.map('map').setView([lat, lon], 19); // Maximum zoom (19 for OSM)
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                
+                // Capa estándar (OSM)
+                osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                    maxZoom: 19 // Ensure max zoom is allowed
-                }).addTo(map);
+                    maxZoom: 19
+                });
+                
+                // Capa satelital (Esri WorldImagery - free for non-commercial)
+                satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                    maxZoom: 19
+                });
+                
+                // Añadir capa estándar por defecto
+                osmLayer.addTo(map);
+                
+                // Manejador de click en el mapa
+                map.on('click', function(e) {
+                    if (marker) {
+                        marker.setLatLng(e.latlng);
+                        lat = e.latlng.lat;
+                        lon = e.latlng.lng;
+                        document.getElementById("location").innerText = `Ubicación GPS: ${lat}, ${lon}`;
+                    }
+                });
+                
+                map.clickHandlerAdded = true;
             } else {
-                map.setView([lat, lon], 19); // Set to max zoom on recapture too
+                map.setView([lat, lon], 19);
             }
             
             document.getElementById("map").style.display = "block";
@@ -282,19 +326,6 @@
                     lon = e.target.getLatLng().lng;
                     document.getElementById("location").innerText = `Ubicación GPS: ${lat}, ${lon}`;
                 });
-            }
-            
-            // Añadir manejador de click en el mapa (solo si no existe ya)
-            if (!map.clickHandlerAdded) {
-                map.on('click', function(e) {
-                    if (marker) {
-                        marker.setLatLng(e.latlng);
-                        lat = e.latlng.lat;
-                        lon = e.latlng.lng;
-                        document.getElementById("location").innerText = `Ubicación GPS: ${lat}, ${lon}`;
-                    }
-                });
-                map.clickHandlerAdded = true; // Flag para evitar duplicados
             }
         }
         
