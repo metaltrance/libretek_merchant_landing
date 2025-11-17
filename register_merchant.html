@@ -32,11 +32,14 @@
             font-size: 16px;
             font-weight: bold;
             color: white;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
             margin-bottom: 5px;
+            box-shadow: 0 4px 8px rgba(247, 147, 26, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2); /* Shade for pressed look */
         }
         .photo-input-label:hover {
             background-color: #e6830a;
+            box-shadow: 0 2px 4px rgba(247, 147, 26, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); /* Pressed effect on hover */
+            transform: translateY(1px);
         }
         .photo-input-label::before {
             content: "📷"; /* Camera icon (Unicode) */
