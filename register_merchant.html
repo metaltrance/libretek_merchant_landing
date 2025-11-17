@@ -36,7 +36,22 @@
         }
         #location { margin: 10px 0; font-style: italic; }
         #map { height: 300px; margin: 10px 0; display: none; position: relative; }
-        #map-toggle { position: absolute; top: 10px; left: 10px; z-index: 1000; background: white; padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; font-size: 12px; }
+        #map-toggle { 
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            z-index: 1000; 
+            background: white; 
+            padding: 8px; 
+            border-radius: 5px; 
+            border: 1px solid #ccc; 
+            cursor: pointer; 
+            font-size: 18px; 
+            line-height: 1;
+            width: auto;
+            height: auto;
+            min-width: auto;
+        }
         #preview { max-width: 100%; max-height: 120px; margin: 5px 0; display: none; object-fit: cover; border-radius: 8px; }
         
         /* Photo Input Styling */
@@ -179,8 +194,9 @@
         
         <div id="location">Ubicación GPS: Esperando...</div>
         <div id="map-container">
-            <div id="map"></div>
-            <button type="button" id="map-toggle" onclick="toggleMapLayer()">Mapa Satelital</button>
+            <div id="map">
+                <button type="button" id="map-toggle" onclick="toggleMapLayer()">🛰️</button>
+            </div>
         </div>
         
         <button type="button" onclick="getLocation()">Recapturar Ubicación</button>
@@ -249,11 +265,11 @@
             isSatellite = !isSatellite;
             const toggleBtn = document.getElementById("map-toggle");
             if (isSatellite) {
-                toggleBtn.textContent = "Mapa Estándar";
+                toggleBtn.innerHTML = "🗺️";
                 map.removeLayer(osmLayer);
                 map.addLayer(satelliteLayer);
             } else {
-                toggleBtn.textContent = "Mapa Satelital";
+                toggleBtn.innerHTML = "🛰️";
                 map.removeLayer(satelliteLayer);
                 map.addLayer(osmLayer);
             }
