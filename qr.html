@@ -31,13 +31,15 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* Use a web-hosted Bitcoin logo for cross-platform consistency */
-            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/512px-Bitcoin.svg.png');
+            /* Switched to direct SVG for better compatibility; falls back to PNG if needed */
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            background-attachment: scroll; /* Added for Safari compatibility with cover */
             opacity: 0.1;
             z-index: -1;
+            display: block; /* Explicitly set for pseudo-element rendering in Safari */
         }
         #topText {
             font-size: 20px;
