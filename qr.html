@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #qrcode {
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: white;
+        }
+        input[type="hidden"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hidden input field for the URL -->
+    <input type="hidden" id="urlField" value="https://libretek-merchant-landing.pages.dev/register_merchant">
+
+    <h1>Scan the QR Code</h1>
+    <div id="qrcode"></div>
+
+    <script>
+        // Get the URL from the hidden field
+        const url = document.getElementById('urlField').value;
+
+        // Generate QR code
+        QRCode.toCanvas(document.getElementById('qrcode'), url, { width: 256 }, function (error) {
+            if (error) console.error(error);
+            console.log('QR code generated successfully!');
+        });
+    </script>
+</body>
+</html>
