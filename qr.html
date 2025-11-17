@@ -23,20 +23,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* Updated to SVG for better rendering */
-            background-image: url('https://cryptologos.cc/logos/bitcoin-btc-logo.svg');
-            background-size: 200px; /* Fixed size instead of cover */
+            /* Use your local SVG file - save it as 'bitcoin-logo.svg' in the same folder as this HTML */
+            background-image: url('bitcoin-logo.svg');
+            background-size: cover; /* Reverted to cover for full subtle background like before */
             background-position: center;
             background-repeat: no-repeat;
-            opacity: 0.15; /* Slightly higher for visibility */
+            opacity: 0.1; /* Back to original subtle opacity */
             z-index: -1;
         }
-        /* Fallback: If SVG fails, uncomment below and comment out the URL above */
-        /*
-        body::before {
-            background-image: url('data:image/svg+xml;base64,...'); // Paste base64 here
-        }
-        */
         #topText {
             font-size: 20px;
             font-weight: bold;
