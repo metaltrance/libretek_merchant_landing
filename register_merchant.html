@@ -8,7 +8,32 @@
     <style>
         body { font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px; }
         input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #f7931a; color: white; border: none; cursor: pointer; margin-bottom: 10px; }
+        button, .photo-input-label {
+            display: inline-block;
+            width: auto;
+            min-width: 200px;
+            padding: 12px 24px;
+            background-color: #f7931a;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(247, 147, 26, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            margin: 5px auto;
+        }
+        button:hover, .photo-input-label:hover {
+            background-color: #e6830a;
+            box-shadow: 0 2px 4px rgba(247, 147, 26, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateY(2px);
+        }
+        button:active, .photo-input-label:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(247, 147, 26, 0.2);
+        }
         #location { margin: 10px 0; font-style: italic; }
         #map { height: 300px; margin: 10px 0; display: none; }
         #preview { max-width: 100%; max-height: 120px; margin: 5px 0; display: none; object-fit: cover; border-radius: 8px; }
@@ -19,31 +44,11 @@
             display: inline-block;
             width: 100%;
             margin: 10px 0;
-        }
-        .photo-input-label {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            background-color: #f7931a;
-            border: none;
-            border-radius: 10px;
             text-align: center;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
-            transition: all 0.3s ease;
-            margin-bottom: 5px;
-            box-shadow: 0 4px 8px rgba(247, 147, 26, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2); /* Shade for pressed look */
-        }
-        .photo-input-label:hover {
-            background-color: #e6830a;
-            box-shadow: 0 2px 4px rgba(247, 147, 26, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); /* Pressed effect on hover */
-            transform: translateY(1px);
         }
         .photo-input-label::before {
             content: "📷"; /* Camera icon (Unicode) */
-            font-size: 24px;
+            font-size: 20px;
             display: block;
             margin-bottom: 5px;
         }
