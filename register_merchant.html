@@ -81,6 +81,34 @@
             display: none; /* Hide default file input */
         }
         
+        /* Upload Options */
+        #upload-options {
+            display: none;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        #upload-options label {
+            display: block;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        #options-toggle {
+            font-size: 12px;
+            padding: 5px;
+            min-width: auto;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #f7931a;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
         /* Overlay Base Styles */
         .overlay {
             position: fixed;
@@ -307,8 +335,17 @@
             </div>
         </div>
         
+        <div id="upload-options">
+            <h3>Opciones de subida (para conexiones lentas, desactiva imágenes):</h3>
+            <label><input type="checkbox" id="upload-photo" checked> Subir foto del comercio</label>
+            <label><input type="checkbox" id="upload-map-standard" checked> Subir mapa estándar</label>
+            <label><input type="checkbox" id="upload-map-satellite" checked> Subir mapa satelital</label>
+        </div>
+        
         <button type="button" onclick="getLocation()">Recapturar Ubicación</button>
-        <button type="submit" id="submitBtn">Enviar y Registrarme</button>
+        <button type="submit" id="submitBtn">Enviar y Registrarme
+            <button type="button" id="options-toggle" onclick="toggleOptions()" title="Opciones avanzadas">⚙️</button>
+        </button>
     </form>
     
     <!-- Loading Overlay -->
@@ -391,6 +428,11 @@
             }
         });
         
+        function toggleOptions() {
+            const options = document.getElementById("upload-options");
+            options.style.display = options.style.display === 'none' ? 'block' : 'none';
+        }
+        
         function toggleMapLayer() {
             isSatellite = !isSatellite;
             const toggleBtn = document.getElementById("map-toggle");
@@ -406,7 +448,7 @@
         }
         
         function getLocation() {
-            if (navigator.geolocati on) {
+            if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(showPosition, showError);
             } else {
                 alert("La geolocalización no es compatible con este navegador.");
@@ -518,6 +560,10 @@
             document.getElementById("preview").style.display = "none";
             document.getElementById("photoLabel").textContent = "Tomar foto del puesto";
             document.getElementById("photoLabel").classList.remove("retake");
+            document.getElementById("upload-photo").checked = true;
+            document.getElementById("upload-map-standard").checked = true;
+            document.getElementById("upload-map-satellite").checked = true;
+            document.getElementById("upload-options").style.display = 'none';
             getLocation();
             document.getElementById("submitBtn").disabled = false;
         }
@@ -579,6 +625,9 @@
             const name = document.getElementById("name").value;
             const lightning = document.getElementById("lightning").value;
             const photoFile = document.getElementById("photo").files[0];
+            const uploadPhoto = document.getElementById("upload-photo").checked;
+            const uploadMapStandard = document.getElementById("upload-map-standard").checked;
+            const uploadMapSatellite = document.getElementById("upload-map-satellite").checked;
             
             if (!lat || !lon || !map) {
                 alert("Por favor, captura tu ubicación GPS primero.");
@@ -616,8 +665,8 @@
                 
                 console.log('Issue created:', issueData);
                 
-                // Paso 2: Foto si existe
-                if (photoFile) {
+                // Paso 2: Foto si existe y seleccionada
+                if (photoFile && uploadPhoto) {
                     const photoPromise = new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = async function(e) {
@@ -655,24 +704,28 @@
                     await photoPromise;
                 }
                 
-                // Paso 3: Capturar ambos mapas
+                // Paso 3: Capturar mapas si seleccionados
                 const wasSatellite = isSatellite;
                 
-                // Asegurar vista estándar y capturar
-                if (isSatellite) {
-                    toggleMapLayer(); // a estándar
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                if (uploadMapStandard) {
+                    if (isSatellite) {
+                        toggleMapLayer(); // Cambiar a estándar
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                    await captureAndAddMap(issueIndex, 'Estándar');
                 }
-                await captureAndAddMap(issueIndex, 'Estándar');
                 
-                // Cambiar a satelital y capturar
-                toggleMapLayer(); // a satelital
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                await captureAndAddMap(issueIndex, 'Satelital');
+                if (uploadMapSatellite) {
+                    if (!isSatellite) {
+                        toggleMapLayer(); // Cambiar a satelital
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                    await captureAndAddMap(issueIndex, 'Satelital');
+                }
                 
-                // Restaurar vista original
-                if (!wasSatellite) {
-                    toggleMapLayer(); // de vuelta a estándar
+                // Restaurar vista original si se cambió
+                if (wasSatellite !== isSatellite) {
+                    toggleMapLayer();
                 }
                 
                 hideLoading();
