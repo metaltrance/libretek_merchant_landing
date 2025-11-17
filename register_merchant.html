@@ -839,28 +839,24 @@
                     await photoPromise;
                 }
                 
-                // Paso 3: Capturar mapas si seleccionados (parallelize standard and satellite to reduce time)
+                // Paso 3: Capturar mapas si seleccionados (now sequential to avoid race conditions)
                 const wasSatellite = isSatellite;
-                const mapPromises = [];
                 
                 if (uploadMapStandard) {
                     if (isSatellite) {
-                        toggleMapLayer(); // Cambiar a estándar
+                        toggleMapLayer(); // Switch to standard
                     }
-                    mapPromises.push(captureAndAddMap(issueIndex, 'Estándar'));
+                    await captureAndAddMap(issueIndex, 'Estándar');
                 }
                 
                 if (uploadMapSatellite) {
                     if (!isSatellite) {
-                        toggleMapLayer(); // Cambiar a satelital
+                        toggleMapLayer(); // Switch to satellite
                     }
-                    mapPromises.push(captureAndAddMap(issueIndex, 'Satelital'));
+                    await captureAndAddMap(issueIndex, 'Satelital');
                 }
                 
-                // Wait for all map captures in parallel
-                await Promise.all(mapPromises);
-                
-                // Restaurar vista original si se cambió
+                // Restore original view if changed
                 if (wasSatellite !== isSatellite) {
                     toggleMapLayer();
                 }
