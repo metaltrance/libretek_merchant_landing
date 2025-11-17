@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Regístrate en BTC Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px; }
         input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
@@ -421,33 +422,57 @@
                 
                 console.log('Issue created:', issueData); // Para debug
                 
+                // Función para agregar comentario con imagen
+                async function addImageComment(commentBody, base64Image, altText) {
+                    const imageMarkdown = `![${altText}](data:image/png;base64,${base64Image})`;
+                    const fullBody = `${commentBody}\n\n${imageMarkdown}`;
+                    
+                    const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
+                    const commentResponse = await fetch(commentUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `token ${TOKEN}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            body: fullBody
+                        })
+                    });
+                    
+                    if (!commentResponse.ok) {
+                        console.warn('Comentario con imagen no agregado:', commentResponse.status);
+                    } else {
+                        console.log('Comment added with image');
+                    }
+                }
+                
                 // Paso 2: Si hay foto, leer como base64 y agregar como comentario
                 if (photoFile) {
                     const reader = new FileReader();
                     reader.onload = async function(e) {
                         const base64Image = e.target.result.split(',')[1]; // Solo el base64 sin prefix
-                        const imageMarkdown = `![Foto del comercio](data:image/jpeg;base64,${base64Image})`;
-                        
-                        // Crear comentario con la imagen embebida
-                        const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
-                        const commentResponse = await fetch(commentUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `token ${TOKEN}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                body: `Foto del comercio:\n\n${imageMarkdown}`
-                            })
-                        });
-                        
-                        if (!commentResponse.ok) {
-                            console.warn('Comentario con foto no agregado:', commentResponse.status);
-                        } else {
-                            console.log('Comment added with photo');
-                        }
+                        await addImageComment('Foto del comercio:', base64Image, 'Foto del comercio');
                     };
                     reader.readAsDataURL(photoFile);
+                }
+                
+                // Paso 3: Capturar mapa como imagen y agregar comentario
+                if (map) {
+                    // Esperar un poco para que las tiles se carguen completamente
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    html2canvas(document.getElementById('map'), {
+                        backgroundColor: null,
+                        scale: 1,
+                        useCORS: true,
+                        allowTaint: true
+                    }).then(async (canvas) => {
+                        const base64Image = canvas.toDataURL('image/png').split(',')[1];
+                        const viewType = isSatellite ? 'Satelital' : 'Estándar';
+                        await addImageComment(`Captura del mapa (${viewType}):`, base64Image, `Mapa ${viewType}`);
+                    }).catch(err => {
+                        console.error('Error capturing map:', err);
+                    });
                 }
                 
                 // Mostrar overlay de éxito en lugar de alert
