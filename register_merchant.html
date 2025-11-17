@@ -265,6 +265,13 @@
             
             document.getElementById("map").style.display = "block";
             
+            // Fix for Android/mobile tile rendering issue
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize();
+                }
+            }, 150);
+            
             // Crear o actualizar marcador
             if (marker) {
                 marker.setLatLng([lat, lon]);
