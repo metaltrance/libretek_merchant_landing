@@ -254,12 +254,13 @@
             
             // Crear o actualizar mapa
             if (!map) {
-                map = L.map('map').setView([lat, lon], 15);
+                map = L.map('map').setView([lat, lon], 19); // Maximum zoom (19 for OSM)
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19 // Ensure max zoom is allowed
                 }).addTo(map);
             } else {
-                map.setView([lat, lon], 15);
+                map.setView([lat, lon], 19); // Set to max zoom on recapture too
             }
             
             document.getElementById("map").style.display = "block";
