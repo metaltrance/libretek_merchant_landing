@@ -107,6 +107,7 @@
             cursor: pointer;
             margin-left: 10px;
             vertical-align: middle;
+            display: none;
         }
         
         /* Overlay Base Styles */
@@ -342,9 +343,9 @@
             <label><input type="checkbox" id="upload-map-satellite" checked> Subir mapa satelital</label>
         </div>
         
-        <button type="button" onclick="getLocation()">Recapturar Ubicación</button>
+        <button type="button" onclick="getLocation()" style="display: none;">Recapturar Ubicación</button>
         <button type="submit" id="submitBtn">Enviar y Registrarme</button>
-        <button type="button" id="options-toggle" onclick="toggleOptions()" title="Opciones avanzadas">⚙️</button>
+        <button type="button" id="options-toggle" onclick="toggleOptions()" title="Opciones avanzadas" style="display: none;">⚙️</button>
     </form>
     
     <!-- Loading Overlay -->
@@ -399,10 +400,19 @@
         let osmLayer = null;
         let satelliteLayer = null;
         let isSatellite = false;
+        let clickCount = 0;
         
         // Capturar ubicación al cargar la página
         window.addEventListener('load', function() {
             getLocation();
+            // Click counter for title
+            document.querySelector('h1').addEventListener('click', function() {
+                clickCount++;
+                if (clickCount >= 5) {
+                    document.getElementById("upload-options").style.display = 'block';
+                    clickCount = 0; // Reset counter
+                }
+            });
         });
         
         // Preview de la foto y cambio de texto del botón
@@ -567,6 +577,7 @@
             document.getElementById("upload-options").style.display = 'none';
             getLocation();
             document.getElementById("submitBtn").disabled = false;
+            clickCount = 0;
         }
         
         function showFailure() {
