@@ -441,7 +441,7 @@
         
         // Detect iOS for adjustments
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const mapCaptureTimeout = isIOS ? 3000 : 2000; // Longer wait on iOS
+        const mapCaptureTimeout = isIOS ? 4000 : 2000; // Even longer wait on iOS for Esri tiles
         
         // Capturar ubicación al cargar la página
         window.addEventListener('load', function() {
@@ -457,7 +457,7 @@
             });
         });
         
-        // Function to compress image
+        // Function to compress image (kept for photo size reduction)
         function compressImage(file, callback) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -488,6 +488,7 @@
                     callback(compressedDataUrl);
                 };
                 img.src = e.target.result;
+                img.crossOrigin = 'anonymous'; // Help with potential CORS if needed
             };
             reader.readAsDataURL(file);
         }
@@ -497,7 +498,7 @@
             const file = e.target.files[0];
             const photoLabel = document.getElementById("photoLabel");
             if (file) {
-                // Use compression for preview too, but lower res for display
+                // Use compression for preview too
                 compressImage(file, function(dataUrl) {
                     document.getElementById("preview").src = dataUrl;
                     document.getElementById("preview").style.display = "block";
@@ -542,7 +543,7 @@
                 if (map) {
                     map.invalidateSize();
                 }
-            }, 200); // Slightly longer on toggle
+            }, 300); // Longer on toggle for Esri on iOS
         }
         
         function showMapSpinner() {
@@ -588,10 +589,10 @@
                     crossOrigin: 'anonymous'
                 });
                 
-                // Capa satelital (Stadia Alidade Satellite - free, CORS-friendly)
-                satelliteLayer = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}.jpg', {
-                    attribution: '© CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | © <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> © <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
-                    maxZoom: 20,
+                // Reverted satellite layer to Esri WorldImagery (free, non-commercial)
+                satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                    maxZoom: 19,
                     crossOrigin: 'anonymous'
                 });
                 
@@ -723,10 +724,10 @@
                     logging: false // Reduce console noise
                 });
                 
-                // Check if canvas is valid (not tainted)
+                // Check if canvas is valid (not tainted/empty)
                 const base64Image = canvas.toDataURL('image/png').split(',')[1];
                 if (base64Image.length < 100) { // Minimal check for empty
-                    throw new Error('Canvas capture failed');
+                    throw new Error('Canvas capture failed - image too small');
                 }
                 
                 const imageMarkdown = `![Mapa ${viewType}](data:image/png;base64,${base64Image})`;
@@ -802,10 +803,12 @@
                 
                 // Paso 2: Foto si existe y seleccionada
                 if (photoFile && uploadPhoto) {
+                    console.log('Uploading photo...'); // Debug log
                     const photoPromise = new Promise((resolve, reject) => {
                         compressImage(photoFile, async function(compressedDataUrl) {
                             try {
                                 const base64Image = compressedDataUrl.split(',')[1];
+                                console.log('Photo base64 length:', base64Image.length); // Debug: check size
                                 const imageMarkdown = `![Foto del comercio](data:image/jpeg;base64,${base64Image})`;
                                 const fullBody = `Foto del comercio:\n\n${imageMarkdown}`;
                                 
@@ -829,7 +832,7 @@
                                 resolve();
                             } catch (err) {
                                 console.error('Error adding photo comment:', err);
-                                resolve();
+                                resolve(); // Continue even on error
                             }
                         });
                     });
@@ -847,13 +850,11 @@
                     mapPromises.push(captureAndAddMap(issueIndex, 'Estándar'));
                 }
                 
-                if (uploadMapSatellite && !isIOS) { // Skip satellite on iOS if still issues, or keep for testing
+                if (uploadMapSatellite) {
                     if (!isSatellite) {
                         toggleMapLayer(); // Cambiar a satelital
                     }
                     mapPromises.push(captureAndAddMap(issueIndex, 'Satelital'));
-                } else if (uploadMapSatellite && isIOS) {
-                    console.warn('Skipping satellite capture on iOS due to potential CORS/rendering issues');
                 }
                 
                 // Wait for all map captures in parallel
