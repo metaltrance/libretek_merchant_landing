@@ -9,8 +9,7 @@
     <style>
         body { font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px; }
 
-        html::before {
-            content: "";
+        .bitcoin-background {
             position: fixed;
             top: 0;
             left: 0;
@@ -63,7 +62,10 @@
             transform: none;
         }
         #location { margin: 10px 0; font-style: italic; }
-        #map { height: 300px; margin: 10px 0; display: none; position: relative; }
+        #map { height: 300px; margin: 10px 0; display: none; position: relative; background: transparent !important; }
+        #map .leaflet-container {
+            background: transparent !important;
+        }
         #map-toggle { 
             position: absolute; 
             top: 10px; 
@@ -379,6 +381,7 @@
     </style>
 </head>
 <body>
+    <div class="bitcoin-background"></div>
     <h1>Regístrate para Aceptar Bitcoin</h1>
     <p>Ingresa tus datos y comparte tu ubicación para unirte a BTC Map. Un bitcoiner te visitará con un bono de $35 y te ayudará.</p>
     
