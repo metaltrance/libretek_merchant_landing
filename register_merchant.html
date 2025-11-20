@@ -7,7 +7,35 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px; }
+        html {
+            height: 100%;
+            height: -webkit-fill-available;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: relative;
+            box-sizing: border-box;
+            background-color: #f0f0f0;
+        }
+        #background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://bitcoin.org/img/icons/bitcoin-orange.svg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: scroll;
+            opacity: 0.1;
+            z-index: -1;
+        }
         input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
         button, .photo-input-label {
             display: block;
@@ -362,6 +390,7 @@
     </style>
 </head>
 <body>
+    <div id="background"></div>
     <h1>Regístrate para Aceptar Bitcoin</h1>
     <p>Ingresa tus datos y comparte tu ubicación para unirte a BTC Map. Un bitcoiner te visitará con un bono de $35 y te ayudará.</p>
     
@@ -464,432 +493,4 @@
         const mapCaptureTimeout = isIOS ? 4000 : 2000; // Even longer wait on iOS for Esri tiles
         
         // Capturar ubicación al cargar la página
-        window.addEventListener('load', function() {
-            getLocation();
-            // Click counter for title
-            document.querySelector('h1').addEventListener('click', function() {
-                clickCount++;
-                if (clickCount >= 5) {
-                    document.getElementById("upload-options").style.display = 'block';
-                    document.getElementById("options-toggle").style.display = 'inline-block';
-                    clickCount = 0; // Reset counter
-                }
-            });
-        });
-        
-        // Function to compress image (kept for photo size reduction)
-        function compressImage(file, callback) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const maxWidth = 1024;
-                    const maxHeight = 768;
-                    let { width, height } = img;
-                    
-                    // Resize if too large
-                    if (width > maxWidth) {
-                        height = (height * maxWidth) / width;
-                        width = maxWidth;
-                    }
-                    if (height > maxHeight) {
-                        width = (width * maxHeight) / height;
-                        height = maxHeight;
-                    }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // Compress to JPEG
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    callback(compressedDataUrl);
-                };
-                img.src = e.target.result;
-                img.crossOrigin = 'anonymous'; // Help with potential CORS if needed
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        // Preview de la foto y cambio de texto del botón
-        document.getElementById("photo").addEventListener("change", function(e) {
-            const file = e.target.files[0];
-            const photoLabel = document.getElementById("photoLabel");
-            if (file) {
-                // Use compression for preview too
-                compressImage(file, function(dataUrl) {
-                    document.getElementById("preview").src = dataUrl;
-                    document.getElementById("preview").style.display = "block";
-                    // Scroll to bottom after preview shows
-                    setTimeout(() => {
-                        window.scrollTo({
-                            top: document.body.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    }, 100);
-                });
-                // Cambiar texto a retomar foto
-                photoLabel.textContent = "Retomar foto del puesto";
-                photoLabel.classList.add("retake");
-            } else {
-                // Reset si se cancela
-                photoLabel.textContent = "Tomar foto del puesto";
-                photoLabel.classList.remove("retake");
-                document.getElementById("preview").style.display = "none";
-            }
-        });
-        
-        function toggleOptions() {
-            const options = document.getElementById("upload-options");
-            options.style.display = options.style.display === 'none' ? 'block' : 'none';
-        }
-        
-        function toggleMapLayer() {
-            isSatellite = !isSatellite;
-            const toggleBtn = document.getElementById("map-toggle");
-            if (isSatellite) {
-                toggleBtn.innerHTML = "🗺️";
-                map.removeLayer(osmLayer);
-                map.addLayer(satelliteLayer);
-            } else {
-                toggleBtn.innerHTML = "🛰️";
-                map.removeLayer(satelliteLayer);
-                map.addLayer(osmLayer);
-            }
-            // Force refresh on iOS/mobile
-            setTimeout(() => {
-                if (map) {
-                    map.invalidateSize();
-                }
-            }, 300); // Longer on toggle for Esri on iOS
-        }
-        
-        function showMapSpinner() {
-            const mapDiv = document.getElementById('map');
-            const spinner = document.getElementById('map-loading');
-            spinner.style.display = 'block';
-            mapDiv.style.display = 'block';
-        }
-        
-        function hideMapSpinner() {
-            const spinner = document.getElementById('map-loading');
-            spinner.style.display = 'none';
-            document.getElementById('map-toggle').style.display = 'block';
-            document.getElementById('current-location-btn').style.display = 'block';
-        }
-        
-        function getLocation() {
-            if (navigator.geolocation) {
-                showMapSpinner();
-                navigator.geolocation.getCurrentPosition(showPosition, showError, {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                });
-            } else {
-                alert("La geolocalización no es compatible con este navegador.");
-                document.getElementById("location").innerText = "Geolocalización no disponible.";
-            }
-        }
-        
-        function showPosition(position) {
-            lat = position.coords.latitude;
-            lon = position.coords.longitude;
-            document.getElementById("location").innerText = `Ubicación GPS: ${lat}, ${lon}`;
-            
-            // Crear o actualizar mapa
-            if (!map) {
-                map = L.map('map').setView([lat, lon], 18); // Reduced zoom to 18 for better iOS compatibility
-                
-                // Capa estándar (OSM)
-                osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                    maxZoom: 19,
-                    crossOrigin: 'anonymous'
-                });
-                
-                // Reverted satellite layer to Esri WorldImagery (free, non-commercial)
-                satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-                    maxZoom: 19,
-                    crossOrigin: 'anonymous'
-                });
-                
-                // Añadir capa estándar por defecto
-                osmLayer.addTo(map);
-                
-                // Manejador de click en el mapa
-                map.on('click', function(e) {
-                    if (marker) {
-                        marker.setLatLng(e.latlng);
-                        lat = e.latlng.lat;
-                        lon = e.latlng.lng;
-                        document.getElementById("location").innerText = `Ubicación GPS: ${lat}, ${lon}`;
-                    }
-                });
-                
-                map.clickHandlerAdded = true;
-            } else {
-                map.setView([lat, lon], 18);
-            }
-            
-            hideMapSpinner();
-            
-            // Fix for Android/mobile tile rendering issue
-            setTimeout(() => {
-                if (map) {
-                    map.invalidateSize();
-                }
-            }, 150);
-            
-            // Crear o actualizar marcador
-            if (marker) {
-                marker.setLatLng([lat, lon]);
-            } else {
-                marker = L.marker([lat, lon], {draggable: true}).addTo(map);
-                marker.on('dragend', function(e) {
-                    lat = e.target.getLatLng().lat;
-                    lon = e.target.getLatLng().lng;
-                    document.getElementById("location").innerText = `Ubicación GPS: ${lat}, ${lon}`;
-                });
-            }
-        }
-        
-        function showError(error) {
-            hideMapSpinner();
-            let message = "Error al obtener ubicación: ";
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    message += "Permiso denegado.";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    message += "Información de ubicación no disponible.";
-                    break;
-                case error.TIMEOUT:
-                    message += "Tiempo de espera agotado.";
-                    break;
-                default:
-                    message += "Error desconocido.";
-            }
-            alert(message);
-            document.getElementById("location").innerText = message + " Usando ubicación predeterminada de Asunción.";
-            // Use default Asunción coordinates
-            showPosition({ coords: { latitude: DEFAULT_LAT, longitude: DEFAULT_LON } });
-        }
-        
-        function showLoading() {
-            document.getElementById("loadingOverlay").classList.add("show");
-        }
-        
-        function hideLoading() {
-            document.getElementById("loadingOverlay").classList.remove("show");
-        }
-        
-        function showSuccess(issueIndex) {
-            document.getElementById("issueIdDisplay").innerText = `Issue ID: ${issueIndex}`;
-            const overlay = document.getElementById("successOverlay");
-            overlay.classList.add("show");
-            // Auto-close after 5 seconds
-            setTimeout(closeSuccess, 5000);
-        }
-        
-        function closeSuccess() {
-            const overlay = document.getElementById("successOverlay");
-            overlay.classList.remove("show");
-            // Reset form after close
-            document.getElementById("registrationForm").reset();
-            document.getElementById("preview").style.display = "none";
-            document.getElementById("photoLabel").textContent = "Tomar foto del puesto";
-            document.getElementById("photoLabel").classList.remove("retake");
-            document.getElementById("upload-photo").checked = true;
-            document.getElementById("upload-map-standard").checked = true;
-            document.getElementById("upload-map-satellite").checked = true;
-            document.getElementById("upload-options").style.display = 'none';
-            document.getElementById("options-toggle").style.display = 'none';
-            getLocation();
-            document.getElementById("submitBtn").disabled = false;
-            clickCount = 0;
-        }
-        
-        function showFailure() {
-            const overlay = document.getElementById("failureOverlay");
-            overlay.classList.add("show");
-            // Auto-close after 5 seconds
-            setTimeout(closeFailure, 5000);
-        }
-        
-        function closeFailure() {
-            const overlay = document.getElementById("failureOverlay");
-            overlay.classList.remove("show");
-            document.getElementById("submitBtn").disabled = false;
-        }
-        
-        // Función para capturar mapa y agregar comentario
-        async function captureAndAddMap(issueIndex, viewType) {
-            try {
-                // Wait for tiles to load, longer on iOS
-                await new Promise(resolve => setTimeout(resolve, mapCaptureTimeout));
-                
-                // Force refresh before capture
-                if (map) {
-                    map.invalidateSize();
-                }
-                
-                const canvas = await html2canvas(document.getElementById('map'), {
-                    backgroundColor: null,
-                    scale: 1,
-                    useCORS: true,
-                    allowTaint: true,
-                    logging: false // Reduce console noise
-                });
-                
-                // Check if canvas is valid (not tainted/empty)
-                const base64Image = canvas.toDataURL('image/png').split(',')[1];
-                if (base64Image.length < 100) { // Minimal check for empty
-                    throw new Error('Canvas capture failed - image too small');
-                }
-                
-                const imageMarkdown = `![Mapa ${viewType}](data:image/png;base64,${base64Image})`;
-                const fullBody = `Captura del mapa (${viewType}):\n\n${imageMarkdown}`;
-                
-                const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
-                const commentResponse = await fetch(commentUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `token ${TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        body: fullBody
-                    })
-                });
-                
-                if (!commentResponse.ok) {
-                    console.warn(`Comentario con mapa ${viewType} no agregado:`, commentResponse.status);
-                } else {
-                    console.log(`Comment added with map ${viewType}`);
-                }
-            } catch (err) {
-                console.error(`Error adding map ${viewType} comment:`, err);
-            }
-        }
-        
-        document.getElementById("registrationForm").addEventListener("submit", async function(event) {
-            event.preventDefault();
-            const submitBtn = document.getElementById("submitBtn");
-            const name = document.getElementById("name").value;
-            const lightning = document.getElementById("lightning").value;
-            const photoFile = document.getElementById("photo").files[0];
-            const uploadPhoto = document.getElementById("upload-photo").checked;
-            const uploadMapStandard = document.getElementById("upload-map-standard").checked;
-            const uploadMapSatellite = document.getElementById("upload-map-satellite").checked;
-            
-            if (!lat || !lon || !map) {
-                alert("Por favor, captura tu ubicación GPS primero.");
-                return;
-            }
-            
-            submitBtn.disabled = true;
-            showLoading();
-            
-            const title = `Nuevo Comercio en Mercado 4: ${name}`;
-            let body = `**Detalles del Comercio:**\n- Nombre: ${name}\n- Dirección Lightning: ${lightning}\n- Ubicación GPS: ${lat}, ${lon}\n\nPor favor, agrega este comercio a BTCMap (crea un issue en GitHub si es necesario) y visita para entregar el bono de $35 y demostrar una compra con Bitcoin.`;
-            let issueIndex = null;
-            
-            try {
-                // Paso 1: Crear el issue
-                const issueUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues`;
-                const issueResponse = await fetch(issueUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `token ${TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        title: title,
-                        body: body
-                    })
-                });
-                
-                if (!issueResponse.ok) {
-                    throw new Error(`Error al crear issue: ${issueResponse.status} - ${issueResponse.statusText}`);
-                }
-                
-                const issueData = await issueResponse.json();
-                issueIndex = issueData.number;
-                
-                console.log('Issue created:', issueData);
-                
-                // Paso 2: Foto si existe y seleccionada
-                if (photoFile && uploadPhoto) {
-                    console.log('Uploading photo...'); // Debug log
-                    const photoPromise = new Promise((resolve, reject) => {
-                        compressImage(photoFile, async function(compressedDataUrl) {
-                            try {
-                                const base64Image = compressedDataUrl.split(',')[1];
-                                console.log('Photo base64 length:', base64Image.length); // Debug: check size
-                                const imageMarkdown = `![Foto del comercio](data:image/jpeg;base64,${base64Image})`;
-                                const fullBody = `Foto del comercio:\n\n${imageMarkdown}`;
-                                
-                                const commentUrl = `${GITEA_BASE}${GITEA_API}/repos/${OWNER}/${REPO}/issues/${issueIndex}/comments`;
-                                const commentResponse = await fetch(commentUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Authorization': `token ${TOKEN}`,
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        body: fullBody
-                                    })
-                                });
-                                
-                                if (!commentResponse.ok) {
-                                    console.warn('Comentario con foto no agregado:', commentResponse.status);
-                                } else {
-                                    console.log('Comment added with photo');
-                                }
-                                resolve();
-                            } catch (err) {
-                                console.error('Error adding photo comment:', err);
-                                resolve(); // Continue even on error
-                            }
-                        });
-                    });
-                    await photoPromise;
-                }
-                
-                // Paso 3: Capturar mapas si seleccionados (now sequential to avoid race conditions)
-                const wasSatellite = isSatellite;
-                
-                if (uploadMapStandard) {
-                    if (isSatellite) {
-                        toggleMapLayer(); // Switch to standard
-                    }
-                    await captureAndAddMap(issueIndex, 'Estándar');
-                }
-                
-                if (uploadMapSatellite) {
-                    if (!isSatellite) {
-                        toggleMapLayer(); // Switch to satellite
-                    }
-                    await captureAndAddMap(issueIndex, 'Satelital');
-                }
-                
-                // Restore original view if changed
-                if (wasSatellite !== isSatellite) {
-                    toggleMapLayer();
-                }
-                
-                hideLoading();
-                showSuccess(issueIndex);
-            } catch (error) {
-                console.error('Error:', error);
-                hideLoading();
-                showFailure();
-            }
-        });
-    </script>
-</body>
-</html>
+        window.addEventListener('load',
