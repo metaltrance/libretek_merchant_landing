@@ -8,6 +8,23 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px; }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url("bitcoin-btc-logo.png");
+            background-size: 30vmin 30vmin;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.08;
+            z-index: -1;
+            pointer-events: none;
+        }
+
         input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
         button, .photo-input-label {
             display: block;
