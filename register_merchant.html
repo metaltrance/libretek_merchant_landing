@@ -1,4 +1,4 @@
-f<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -62,6 +62,26 @@ f<!DOCTYPE html>
             width: auto;
             height: auto;
             min-width: auto;
+        }
+        #current-location-btn {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 6px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            width: auto;
+            height: auto;
+            min-width: auto;
+        }
+        #current-location-btn:hover {
+            background-color: #f0f0f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         #preview { 
             max-width: 100%; 
@@ -359,6 +379,7 @@ f<!DOCTYPE html>
                     <div class="map-spinner"></div>
                 </div>
                 <button type="button" id="map-toggle" onclick="toggleMapLayer()" style="display: none;">🛰️</button>
+                <button type="button" id="current-location-btn" onclick="getLocation()" title="Recapturar ubicación GPS actual" style="display: none;">📍</button>
             </div>
         </div>
         
@@ -375,7 +396,6 @@ f<!DOCTYPE html>
             <label><input type="checkbox" id="upload-map-satellite" checked> Subir mapa satelital</label>
         </div>
         
-        <button type="button" onclick="getLocation()" style="display: none;">Recapturar Ubicación</button>
         <button type="submit" id="submitBtn">Enviar y Registrarme</button>
         <button type="button" id="options-toggle" onclick="toggleOptions()" title="Opciones avanzadas" style="display: none;">⚙️</button>
     </form>
@@ -557,6 +577,7 @@ f<!DOCTYPE html>
             const spinner = document.getElementById('map-loading');
             spinner.style.display = 'none';
             document.getElementById('map-toggle').style.display = 'block';
+            document.getElementById('current-location-btn').style.display = 'block';
         }
         
         function getLocation() {
