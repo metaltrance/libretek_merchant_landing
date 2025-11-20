@@ -7,7 +7,32 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px; }
+        html {
+            height: 100%;
+            height: -webkit-fill-available;
+        }
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            position: relative;
+            background-color: #f0f0f0;
+        }
+
+        .bitcoin-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: scroll;
+            opacity: 0.1;
+            z-index: -1;
+        }
+
         input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
         button, .photo-input-label {
             display: block;
@@ -46,7 +71,16 @@
             transform: none;
         }
         #location { margin: 10px 0; font-style: italic; }
-        #map { height: 300px; margin: 10px 0; display: none; position: relative; }
+        #map { height: 300px; margin: 10px 0; display: none; position: relative; background: transparent !important; }
+        #map .leaflet-container {
+            background: transparent !important;
+        }
+        #map .leaflet-pane {
+            background: transparent !important;
+        }
+        #map .leaflet-tile {
+            opacity: 0.6 !important;
+        }
         #map-toggle { 
             position: absolute; 
             top: 10px; 
@@ -362,6 +396,7 @@
     </style>
 </head>
 <body>
+    <div class="bitcoin-background"></div>
     <h1>Regístrate para Aceptar Bitcoin</h1>
     <p>Ingresa tus datos y comparte tu ubicación para unirte a BTC Map. Un bitcoiner te visitará con un bono de $35 y te ayudará.</p>
     
